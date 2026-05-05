@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>פרופיל מטופל — CliniqAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-text">✦ CliniqAI</div>
+        <div class="logo-sub">ניהול קליניקה חכם</div>
+      </div>
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">?</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="sidebar-user-name">טוען...</div>
+          <div class="sidebar-user-role" id="sidebar-user-role">מטפל/ת</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/dashboard.html"><span class="nav-icon">🏠</span> לוח בקרה</a>
+        <a href="/calendar.html"><span class="nav-icon">📅</span> יומן</a>
+        <a href="/patients.html" class="active"><span class="nav-icon">👥</span> מטופלים</a>
+        <a href="#" onclick="showToast('בקרוב!','info')"><span class="nav-icon">💬</span> הודעות</a>
+        <a href="#" onclick="showToast('בקרוב!','info')"><span class="nav-icon">📊</span> דוחות</a>
+        <a href="/settings.html"><span class="nav-icon">⚙️</span> הגדרות</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logout-btn"><span>🚪</span> התנתקות</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <!-- Back -->
+      <a href="/patients.html" style="display:inline-flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--text-muted);margin-bottom:20px;transition:color 0.15s" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">
+        ← חזרה למטופלים
+      </a>
+
+      <!-- Patient Header -->
+      <div class="patient-header" id="patient-header">
+        <div style="width:80px;height:80px;border-radius:50%;background:var(--surface-2)" class="skeleton"></div>
+        <div style="flex:1">
+          <div class="skeleton" style="height:20px;width:200px;margin-bottom:8px"></div>
+          <div class="skeleton" style="height:14px;width:300px"></div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div data-tabs>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="history">📋 היסטוריית טיפולים</button>
+          <button class="tab-btn" data-tab="ai">🤖 AI סיכום <span class="premium-badge">✨ Premium</span></button>
+          <button class="tab-btn" data-tab="docs">📁 מסמכים</button>
+          <button class="tab-btn" data-tab="payments">💳 תשלומים</button>
+        </div>
+
+        <!-- TAB: History -->
+        <div class="tab-panel active" data-panel="history">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 style="font-size:1rem;font-weight:700">טיפולים ופגישות</h3>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-note')">+ הוסף סיכום</button>
+          </div>
+          <div id="treatment-history">
+            <div class="skeleton" style="height:100px;margin-bottom:12px;border-radius:12px"></div>
+            <div class="skeleton" style="height:100px;margin-bottom:12px;border-radius:12px"></div>
+          </div>
+        </div>
+
+        <!-- TAB: AI -->
+        <div class="tab-panel" data-panel="ai">
+          <div class="ai-panel">
+            <div class="ai-label">🤖 AI מבוסס Gemini</div>
+            <h3 style="font-size:1rem;font-weight:700;margin-bottom:8px;color:var(--text)">סיכום טיפול אוטומטי</h3>
+            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px">תארי את מה שהיה בפגישה ו-AI ייצור סיכום מקצועי</p>
+            <div class="form-group" style="margin-bottom:12px">
+              <textarea class="form-input" id="ai-input" placeholder="תארי את הטיפול שהיה — מה עסקנו, מה עלה, תצפיות..." style="min-height:120px"></textarea>
+            </div>
+            <button class="btn btn-secondary" id="ai-summary-btn" style="margin-bottom:20px">
+              <span id="ai-summary-spinner" style="display:none" class="spin">⟳</span>
+              ✨ צרי סיכום AI
+            </button>
+            <div id="ai-output-section" style="display:none">
+              <div style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);margin-bottom:8px">סיכום AI:</div>
+              <div class="ai-output" id="ai-output"></div>
+              <div style="display:flex;gap:10px;margin-top:12px">
+                <button class="btn btn-outline btn-sm" id="save-summary-btn">💾 שמור לטיפול</button>
+                <button class="btn btn-ghost btn-sm" id="ai-post-btn">📱 צרי פוסט אינסטגרם</button>
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <h3 style="font-size:1rem;font-weight:700;margin-bottom:8px;color:var(--text)">📱 פוסט אינסטגרם אנונימי</h3>
+            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px">צרי פוסט מעורר השראה מהטיפול — ללא פרטים מזהים</p>
+            <div class="form-group" style="margin-bottom:12px">
+              <input type="text" class="form-input" id="post-topic" placeholder="נושא לפוסט, למשל: התמודדות עם חרדה חברתית">
+            </div>
+            <button class="btn btn-accent btn-sm" id="create-post-btn">
+              <span id="post-spinner" style="display:none" class="spin">⟳</span>
+              📱 צרי פוסט
+            </button>
+            <div id="post-output-section" style="display:none;margin-top:16px">
+              <div style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);margin-bottom:8px">הפוסט:</div>
+              <div class="ai-output" id="post-output"></div>
+              <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="copyPost()">📋 העתק פוסט</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: Documents -->
+        <div class="tab-panel" data-panel="docs">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 style="font-size:1rem;font-weight:700">מסמכים ואבחונים</h3>
+            <label class="btn btn-primary btn-sm" style="cursor:pointer">
+              📎 העלה מסמך
+              <input type="file" style="display:none" id="doc-upload" accept=".pdf,.doc,.docx,.jpg,.png">
+            </label>
+          </div>
+          <div id="docs-list">
+            <div class="empty-state">
+              <div class="empty-state-icon">📁</div>
+              <h3>אין מסמכים</h3>
+              <p>העלי מסמכים, אבחונים וממצאים</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: Payments -->
+        <div class="tab-panel" data-panel="payments">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 style="font-size:1rem;font-weight:700">תשלומים</h3>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-payment')">+ הוסף תשלום</button>
+          </div>
+          <div style="background:var(--primary-bg);border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:0.75rem;color:var(--text-muted)">יתרה כוללת</div>
+              <div style="font-size:1.5rem;font-weight:800;color:var(--primary)" id="balance-display">₪0</div>
+            </div>
+            <div style="font-size:2rem">💰</div>
+          </div>
+          <div id="payments-list">
+            <div class="empty-state">
+              <div class="empty-state-icon">💳</div>
+              <h3>אין תשלומים</h3>
+              <p>הוסיפי רשומות תשלום לפגישות</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Note Modal -->
+  <div class="modal-overlay" id="modal-add-note" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">📝 סיכום טיפול</h2>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">תאריך</label>
+          <input type="date" class="form-input" id="note-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">סיכום הטיפול</label>
+          <textarea class="form-input" id="note-content" placeholder="תארי את מה שנעשה בטיפול, תצפיות, המלצות להמשך..." style="min-height:140px"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="save-note-btn">שמירה</button>
+        <button class="btn btn-ghost" onclick="closeModal('modal-add-note')">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Patient Modal -->
+  <div class="modal-overlay" id="modal-edit-patient" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">✏️ עריכת מטופל</h2>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">שם מלא *</label>
+          <input type="text" class="form-input" id="edit-name">
+        </div>
+        <div class="grid grid-2">
+          <div class="form-group">
+            <label class="form-label">טלפון</label>
+            <input type="tel" class="form-input" id="edit-phone">
+          </div>
+          <div class="form-group">
+            <label class="form-label">אימייל</label>
+            <input type="email" class="form-input" id="edit-email">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">סוג טיפול</label>
+          <input type="text" class="form-input" id="edit-treatment">
+        </div>
+        <div class="form-group">
+          <label class="form-label">הערות</label>
+          <textarea class="form-input" id="edit-notes" style="min-height:80px"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="save-edit-btn">שמירה</button>
+        <button class="btn btn-ghost" onclick="closeModal('modal-edit-patient')">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Payment Modal -->
+  <div class="modal-overlay" id="modal-add-payment" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">💳 הוספת תשלום</h2>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">סכום (₪)</label>
+          <input type="number" class="form-input" id="pay-amount" placeholder="350">
+        </div>
+        <div class="form-group">
+          <label class="form-label">תאריך</label>
+          <input type="date" class="form-input" id="pay-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">סטטוס</label>
+          <select class="form-input" id="pay-status">
+            <option value="paid">שולם</option>
+            <option value="unpaid">לא שולם</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">הערה</label>
+          <input type="text" class="form-input" id="pay-note" placeholder="פגישה מס. 5">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="save-payment-btn">שמירה</button>
+        <button class="btn btn-ghost" onclick="closeModal('modal-add-payment')">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/supabase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    let patientId = null;
+    let therapistId = null;
+    let patient = null;
+    let payments = [];
+
+    async function init() {
+      const user = await requireAuth();
+      if (!user) return;
+      initLogout(); initMobileSidebar(); initModals(); initTabs();
+
+      const profile = await getTherapistProfile(user.id);
+      therapistId = profile?.id;
+      await loadSidebarUser();
+
+      patientId = new URLSearchParams(window.location.search).get('id');
+      if (!patientId) { window.location.href = '/patients.html'; return; }
+
+      document.getElementById('note-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('pay-date').value = new Date().toISOString().split('T')[0];
+
+      await loadPatient();
+      await loadHistory();
+      setupAI();
+      setupSaveNote();
+      setupSavePayment();
+      setupDocUpload();
+    }
+
+    async function loadPatient() {
+      patient = await getPatient(patientId);
+      if (!patient) { showToast('מטופל לא נמצא', 'error'); window.location.href = '/patients.html'; return; }
+
+      document.title = `${patient.full_name} — CliniqAI`;
+      const age = calcAge(patient.birth_date);
+      const color = avatarColor(patient.full_name);
+      const ini = initials(patient.full_name);
+
+      document.getElementById('patient-header').innerHTML = `
+        <div class="avatar avatar-xl" style="background:${color}">${ini}</div>
+        <div class="patient-info">
+          <h1 class="patient-name">${patient.full_name}</h1>
+          <div class="patient-meta">
+            ${patient.phone ? `<div class="patient-meta-item">📞 ${patient.phone}</div>` : ''}
+            ${patient.email ? `<div class="patient-meta-item">✉️ ${patient.email}</div>` : ''}
+            ${age ? `<div class="patient-meta-item">🎂 גיל ${age}</div>` : ''}
+            ${patient.treatment_type ? `<div class="patient-meta-item">🩺 ${patient.treatment_type}</div>` : ''}
+          </div>
+          ${patient.notes ? `<div style="margin-top:10px;font-size:0.8rem;color:var(--text-muted);padding:8px 12px;background:var(--surface-2);border-radius:6px;max-width:600px">${patient.notes}</div>` : ''}
+        </div>
+        <div class="patient-actions">
+          ${patient.phone ? `<a href="tel:${patient.phone}" class="btn btn-ghost btn-sm">📞 התקשר</a>` : ''}
+          ${patient.phone ? `<button class="btn-whatsapp btn-sm" onclick="openWhatsApp('${patient.phone}')">💬 וואטסאפ</button>` : ''}
+          <button class="btn btn-outline btn-sm" onclick="window.location.href='/calendar.html'">📅 קבע תור</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditModal()">✏️ ערוך</button>
+        </div>`;
+    }
+
+    async function loadHistory() {
+      const notes = await getTreatmentNotes(patientId);
+      const container = document.getElementById('treatment-history');
+
+      if (notes.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <h3>אין סיכומי טיפול</h3>
+            <p>לחצי "+ הוסף סיכום" לתיעוד הטיפול הראשון</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = notes.map(n => `
+        <div class="treatment-note-item">
+          <div class="treatment-note-date">
+            ${formatDate(n.created_at)} · ${n.appointments?.treatment_type || ''}
+          </div>
+          <div class="treatment-note-content">${n.content || ''}</div>
+          ${n.ai_summary ? `
+            <div style="margin-top:12px;padding:10px 12px;background:var(--secondary-bg);border-radius:8px;font-size:0.8rem">
+              <div style="font-weight:700;color:var(--secondary);margin-bottom:4px">🤖 סיכום AI</div>
+              <div style="color:var(--text)">${n.ai_summary}</div>
+            </div>` : ''}
+        </div>`).join('');
+    }
+
+    function setupSaveNote() {
+      document.getElementById('save-note-btn').addEventListener('click', async () => {
+        const content = document.getElementById('note-content').value.trim();
+        if (!content) { showToast('אנא מלאי את סיכום הטיפול', 'error'); return; }
+        const btn = document.getElementById('save-note-btn');
+        btn.disabled = true; btn.textContent = 'שומר...';
+        try {
+          await createTreatmentNote({ patient_id: patientId, therapist_id: therapistId, content });
+          showToast('סיכום נשמר! ✅', 'success');
+          closeModal('modal-add-note');
+          document.getElementById('note-content').value = '';
+          await loadHistory();
+        } catch (err) { showToast('שגיאה: ' + err.message, 'error'); }
+        finally { btn.disabled = false; btn.textContent = 'שמירה'; }
+      });
+    }
+
+    function setupAI() {
+      document.getElementById('ai-summary-btn').addEventListener('click', async () => {
+        const text = document.getElementById('ai-input').value.trim();
+        if (!text) { showToast('אנא תארי את הטיפול תחילה', 'error'); return; }
+        const btn = document.getElementById('ai-summary-btn');
+        const spinner = document.getElementById('ai-summary-spinner');
+        btn.disabled = true; spinner.style.display = 'inline';
+        try {
+          const data = await apiPost('/api/ai-summary', { treatmentNotes: text });
+          document.getElementById('ai-output').textContent = data.summary;
+          document.getElementById('ai-output-section').style.display = 'block';
+        } catch (err) { showToast('שגיאה: ' + err.message, 'error'); }
+        finally { btn.disabled = false; spinner.style.display = 'none'; }
+      });
+
+      document.getElementById('save-summary-btn').addEventListener('click', async () => {
+        const content = document.getElementById('ai-input').value.trim();
+        const summary = document.getElementById('ai-output').textContent;
+        if (!summary) return;
+        try {
+          await createTreatmentNote({ patient_id: patientId, therapist_id: therapistId, content, ai_summary: summary });
+          showToast('סיכום נשמר לתיק המטופל ✅', 'success');
+          await loadHistory();
+        } catch (err) { showToast('שגיאה: ' + err.message, 'error'); }
+      });
+
+      document.getElementById('create-post-btn').addEventListener('click', async () => {
+        const topic = document.getElementById('post-topic').value.trim();
+        if (!topic) { showToast('אנא הזיני נושא לפוסט', 'error'); return; }
+        const btn = document.getElementById('create-post-btn');
+        const spinner = document.getElementById('post-spinner');
+        btn.disabled = true; spinner.style.display = 'inline';
+        try {
+          const data = await apiPost('/api/ai-post', { topic });
+          document.getElementById('post-output').textContent = data.post;
+          document.getElementById('post-output-section').style.display = 'block';
+        } catch (err) { showToast('שגיאה: ' + err.message, 'error'); }
+        finally { btn.disabled = false; spinner.style.display = 'none'; }
+      });
+
+      document.getElementById('ai-post-btn').addEventListener('click', () => {
+        const summary = document.getElementById('ai-output').textContent;
+        if (summary) {
+          document.getElementById('post-topic').value = summary.substring(0, 100) + '...';
+          document.querySelector('[data-tab="ai"]').click();
+        }
+      });
+    }
+
+    function copyPost() {
+      const text = document.getElementById('post-output').textContent;
+      navigator.clipboard.writeText(text).then(() => showToast('הפוסט הועתק ✅', 'success'));
+    }
+
+    function openEditModal() {
+      document.getElementById('edit-name').value = patient.full_name || '';
+      document.getElementById('edit-phone').value = patient.phone || '';
+      document.getElementById('edit-email').value = patient.email || '';
+      document.getElementById('edit-treatment').value = patient.treatment_type || '';
+      document.getElementById('edit-notes').value = patient.notes || '';
+      openModal('modal-edit-patient');
+    }
+
+    document.getElementById('save-edit-btn').addEventListener('click', async () => {
+      const name = document.getElementById('edit-name').value.trim();
+      if (!name) { showToast('שם הוא שדה חובה', 'error'); return; }
+      try {
+        await updatePatient(patientId, {
+          full_name: name,
+          phone: document.getElementById('edit-phone').value.trim(),
+          email: document.getElementById('edit-email').value.trim(),
+          treatment_type: document.getElementById('edit-treatment').value.trim(),
+          notes: document.getElementById('edit-notes').value.trim()
+        });
+        showToast('פרטי המטופל עודכנו ✅', 'success');
+        closeModal('modal-edit-patient');
+        await loadPatient();
+      } catch (err) { showToast('שגיאה: ' + err.message, 'error'); }
+    });
+
+    // Simple localStorage payments (placeholder for real DB)
+    function getLocalPayments() {
+      return JSON.parse(localStorage.getItem(`payments_${patientId}`) || '[]');
+    }
+    function saveLocalPayments(list) {
+      localStorage.setItem(`payments_${patientId}`, JSON.stringify(list));
+    }
+
+    function renderPayments() {
+      payments = getLocalPayments();
+      const total = payments.filter(p => p.status === 'unpaid').reduce((s, p) => s + Number(p.amount), 0);
+      document.getElementById('balance-display').textContent = `₪${total.toLocaleString()}`;
+      const container = document.getElementById('payments-list');
+      if (payments.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">💳</div><h3>אין תשלומים</h3><p>הוסיפי רשומות תשלום לפגישות</p></div>`;
+        return;
+      }
+      container.innerHTML = payments.map((p, i) => `
+        <div class="payment-item">
+          <div>
+            <div style="font-size:0.875rem;font-weight:600">${p.note || 'פגישה'}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted)">${formatDate(p.date)}</div>
+          </div>
+          <div style="font-size:1rem;font-weight:700;color:${p.status==='paid'?'var(--success)':'var(--danger)'};margin-right:auto">
+            ₪${Number(p.amount).toLocaleString()}
+          </div>
+          ${statusBadge(p.status==='paid'?'active':'archived')}
+          <button class="btn btn-ghost btn-sm" onclick="removePayment(${i})">✕</button>
+        </div>`).join('');
+    }
+
+    function removePayment(i) {
+      const list = getLocalPayments();
+      list.splice(i, 1);
+      saveLocalPayments(list);
+      renderPayments();
+    }
+
+    function setupSavePayment() {
+      document.getElementById('save-payment-btn').addEventListener('click', () => {
+        const amount = document.getElementById('pay-amount').value;
+        const date = document.getElementById('pay-date').value;
+        if (!amount || !date) { showToast('מלאי סכום ותאריך', 'error'); return; }
+        const list = getLocalPayments();
+        list.unshift({ amount, date, status: document.getElementById('pay-status').value, note: document.getElementById('pay-note').value });
+        saveLocalPayments(list);
+        showToast('תשלום נוסף ✅', 'success');
+        closeModal('modal-add-payment');
+        renderPayments();
+      });
+      renderPayments();
+    }
+
+    function setupDocUpload() {
+      document.getElementById('doc-upload').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const docs = JSON.parse(localStorage.getItem(`docs_${patientId}`) || '[]');
+        docs.unshift({ name: file.name, size: file.size, date: new Date().toISOString() });
+        localStorage.setItem(`docs_${patientId}`, JSON.stringify(docs));
+        renderDocs();
+        showToast(`קובץ "${file.name}" הועלה ✅`, 'success');
+      });
+      renderDocs();
+    }
+
+    function renderDocs() {
+      const docs = JSON.parse(localStorage.getItem(`docs_${patientId}`) || '[]');
+      const container = document.getElementById('docs-list');
+      if (docs.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📁</div><h3>אין מסמכים</h3><p>העלי מסמכים ואבחונים</p></div>`;
+        return;
+      }
+      container.innerHTML = docs.map((d, i) => `
+        <div class="doc-item">
+          <div class="doc-icon">${d.name.endsWith('.pdf') ? '📄' : d.name.match(/\.(jpg|png|jpeg)$/i) ? '🖼️' : '📎'}</div>
+          <div>
+            <div class="doc-name">${d.name}</div>
+            <div class="doc-meta">${formatDate(d.date)} · ${(d.size/1024).toFixed(0)}KB</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="removeDoc(${i})" style="margin-right:auto">✕</button>
+        </div>`).join('');
+    }
+
+    function removeDoc(i) {
+      const docs = JSON.parse(localStorage.getItem(`docs_${patientId}`) || '[]');
+      docs.splice(i, 1);
+      localStorage.setItem(`docs_${patientId}`, JSON.stringify(docs));
+      renderDocs();
+    }
+
+    init();
+  </script>
+</body>
+</html>

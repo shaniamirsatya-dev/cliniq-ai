@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>הגדרות — CliniqAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-text">✦ CliniqAI</div>
+        <div class="logo-sub">ניהול קליניקה חכם</div>
+      </div>
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">?</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="sidebar-user-name">טוען...</div>
+          <div class="sidebar-user-role" id="sidebar-user-role">מטפל/ת</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/dashboard.html"><span class="nav-icon">🏠</span> לוח בקרה</a>
+        <a href="/calendar.html"><span class="nav-icon">📅</span> יומן</a>
+        <a href="/patients.html"><span class="nav-icon">👥</span> מטופלים</a>
+        <a href="#" onclick="showToast('בקרוב!','info')"><span class="nav-icon">💬</span> הודעות</a>
+        <a href="#" onclick="showToast('בקרוב!','info')"><span class="nav-icon">📊</span> דוחות</a>
+        <a href="/settings.html" class="active"><span class="nav-icon">⚙️</span> הגדרות</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logout-btn"><span>🚪</span> התנתקות</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">⚙️ הגדרות</h1>
+          <p class="page-subtitle">ניהול הפרופיל והקליניקה שלך</p>
+        </div>
+      </div>
+
+      <!-- Section 1: Profile -->
+      <div class="settings-section">
+        <div class="settings-section-title">👤 פרופיל מקצועי</div>
+        <div style="display:flex;align-items:flex-start;gap:24px;margin-bottom:24px;flex-wrap:wrap">
+          <div style="text-align:center">
+            <div class="avatar avatar-xl" id="profile-avatar" style="background:var(--primary);margin:0 auto 12px">?</div>
+            <button class="btn btn-ghost btn-sm" onclick="showToast('העלאת תמונה — בקרוב!', 'info')">שנה תמונה</button>
+          </div>
+          <div style="flex:1;min-width:260px">
+            <div class="grid grid-2" style="gap:16px">
+              <div class="form-group" style="grid-column:1/-1">
+                <label class="form-label">שם מלא</label>
+                <input type="text" class="form-input" id="prof-name" placeholder="ד"ר שרה לוי">
+              </div>
+              <div class="form-group">
+                <label class="form-label">מקצוע</label>
+                <input type="text" class="form-input" id="prof-profession" placeholder="פסיכולוגית קלינית">
+              </div>
+              <div class="form-group">
+                <label class="form-label">טלפון</label>
+                <input type="tel" class="form-input" id="prof-phone" placeholder="050-0000000">
+              </div>
+              <div class="form-group" style="grid-column:1/-1">
+                <label class="form-label">כתובת קליניקה</label>
+                <input type="text" class="form-input" id="prof-address" placeholder="רחוב הרצל 1, תל אביב">
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="save-profile-btn">שמירת פרופיל</button>
+      </div>
+
+      <!-- Section 2: Working Hours -->
+      <div class="settings-section">
+        <div class="settings-section-title">🕐 שעות עבודה</div>
+        <div style="display:flex;flex-direction:column;gap:8px" id="working-hours-grid">
+          <!-- rendered by JS -->
+        </div>
+        <button class="btn btn-primary" style="margin-top:16px" id="save-hours-btn">שמירת שעות</button>
+      </div>
+
+      <!-- Section 3: Reminders -->
+      <div class="settings-section">
+        <div class="settings-section-title">🔔 תזכורות אוטומטיות</div>
+        <div class="toggle-wrapper">
+          <div>
+            <div class="toggle-label">תזכורת 24 שעות לפני</div>
+            <div class="toggle-desc">שולחת וואטסאפ יום לפני כל תור</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="reminder-24h" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-wrapper">
+          <div>
+            <div class="toggle-label">תזכורת שעה לפני</div>
+            <div class="toggle-desc">שולחת וואטסאפ שעה לפני הפגישה</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="reminder-1h">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="form-group" style="margin-top:16px">
+          <label class="form-label">נוסח ההודעה</label>
+          <textarea class="form-input" id="reminder-template" style="min-height:100px">שלום {שם_מטופל}, מזכיר/ה לך על פגישתנו ב-{תאריך} בשעה {שעה}. נתראה! 😊</textarea>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">משתנים: {שם_מטופל}, {תאריך}, {שעה}</div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:16px" id="save-reminders-btn">שמירת הגדרות תזכורות</button>
+      </div>
+
+      <!-- Section 4: Plan -->
+      <div class="settings-section">
+        <div class="settings-section-title">💎 מנוי ותוכנית</div>
+        <div class="grid grid-2" style="gap:16px;margin-bottom:20px">
+          <div class="plan-card active">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+              <div class="plan-name">🌱 בסיסי</div>
+              <span class="badge badge-primary">תוכנית נוכחית</span>
+            </div>
+            <div class="plan-price">חינם <span>/ לתמיד</span></div>
+            <div style="margin-top:12px;display:flex;flex-direction:column;gap:6px">
+              <div style="font-size:0.8rem;color:var(--text-secondary)">✅ עד 20 מטופלים</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary)">✅ יומן בסיסי</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary)">✅ תזכורות ידניות</div>
+              <div style="font-size:0.8rem;color:var(--text-muted)">❌ AI סיכומים</div>
+              <div style="font-size:0.8rem;color:var(--text-muted)">❌ פוסטים אוטומטיים</div>
+            </div>
+          </div>
+          <div class="plan-card" style="border-color:var(--secondary)">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+              <div class="plan-name">✨ Pro</div>
+              <span class="badge badge-secondary">מומלץ</span>
+            </div>
+            <div class="plan-price" style="color:var(--secondary)">₪99 <span>/ לחודש</span></div>
+            <div style="margin-top:12px;display:flex;flex-direction:column;gap:6px">
+              <div style="font-size:0.8rem;color:var(--text-secondary)">✅ מטופלים ללא הגבלה</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary)">✅ יומן מלא</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary)">✅ תזכורות אוטומטיות</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary)">✅ AI סיכומים</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary)">✅ פוסטים אוטומטיים</div>
+            </div>
+            <button class="btn btn-secondary" style="width:100%;margin-top:16px" onclick="showToast('בקרוב! 🚀', 'info')">שדרגי עכשיו</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 5: Account -->
+      <div class="settings-section">
+        <div class="settings-section-title">🔐 חשבון</div>
+        <div class="form-group" style="margin-bottom:16px">
+          <label class="form-label">כתובת אימייל</label>
+          <input type="email" class="form-input" id="account-email" disabled>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-outline btn-sm" onclick="changePassword()">שינוי סיסמה</button>
+          <button class="btn btn-danger btn-sm" onclick="confirmDelete()">מחיקת חשבון</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/supabase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    const DAYS_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+    let therapistId = null;
+    let workingHours = {};
+
+    async function init() {
+      const user = await requireAuth();
+      if (!user) return;
+      initLogout(); initMobileSidebar();
+
+      const profile = await getTherapistProfile(user.id);
+      therapistId = profile?.id;
+      await loadSidebarUser();
+
+      document.getElementById('account-email').value = user.email;
+
+      if (profile) {
+        document.getElementById('prof-name').value = profile.full_name || '';
+        document.getElementById('prof-profession').value = profile.profession || '';
+        document.getElementById('prof-phone').value = profile.phone || '';
+        document.getElementById('prof-address').value = profile.clinic_address || '';
+        workingHours = profile.working_hours || {};
+        const avatar = document.getElementById('profile-avatar');
+        avatar.textContent = initials(profile.full_name || user.email);
+        avatar.style.background = avatarColor(profile.full_name || user.email);
+      }
+
+      renderWorkingHours();
+      setupSave(user.id);
+      loadReminderSettings();
+    }
+
+    function renderWorkingHours() {
+      const container = document.getElementById('working-hours-grid');
+      container.innerHTML = DAYS_HE.map((day, i) => {
+        const h = workingHours[i] || { enabled: i < 5, start: '09:00', end: '18:00' };
+        return `
+          <div style="display:grid;grid-template-columns:80px auto 1fr auto 1fr;align-items:center;gap:12px;padding:10px;background:var(--bg);border-radius:8px">
+            <label class="toggle" style="width:44px">
+              <input type="checkbox" data-day="${i}" class="hours-enabled" ${h.enabled?'checked':''}>
+              <span class="toggle-slider"></span>
+            </label>
+            <div class="working-hours-day">${day}</div>
+            <input type="time" class="form-input" data-day="${i}" data-type="start" value="${h.start}" ${h.enabled?'':'disabled'} style="font-size:0.85rem;padding:7px 10px">
+            <span style="font-size:0.8rem;color:var(--text-muted);text-align:center">עד</span>
+            <input type="time" class="form-input" data-day="${i}" data-type="end" value="${h.end}" ${h.enabled?'':'disabled'} style="font-size:0.85rem;padding:7px 10px">
+          </div>`;
+      }).join('');
+
+      document.querySelectorAll('.hours-enabled').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const day = cb.dataset.day;
+          const enabled = cb.checked;
+          document.querySelectorAll(`[data-day="${day}"][data-type]`).forEach(inp => {
+            inp.disabled = !enabled;
+          });
+        });
+      });
+    }
+
+    function collectWorkingHours() {
+      const hours = {};
+      DAYS_HE.forEach((_, i) => {
+        const enabled = document.querySelector(`.hours-enabled[data-day="${i}"]`)?.checked;
+        const start = document.querySelector(`[data-day="${i}"][data-type="start"]`)?.value;
+        const end = document.querySelector(`[data-day="${i}"][data-type="end"]`)?.value;
+        hours[i] = { enabled, start, end };
+      });
+      return hours;
+    }
+
+    function loadReminderSettings() {
+      const settings = JSON.parse(localStorage.getItem('reminder_settings') || '{}');
+      document.getElementById('reminder-24h').checked = settings.reminder24h !== false;
+      document.getElementById('reminder-1h').checked = settings.reminder1h || false;
+      document.getElementById('reminder-template').value = settings.template || document.getElementById('reminder-template').value;
+    }
+
+    function setupSave(userId) {
+      document.getElementById('save-profile-btn').addEventListener('click', async () => {
+        const name = document.getElementById('prof-name').value.trim();
+        const btn = document.getElementById('save-profile-btn');
+        btn.disabled = true; btn.textContent = 'שומר...';
+        try {
+          await upsertTherapistProfile({
+            user_id: userId,
+            full_name: name,
+            profession: document.getElementById('prof-profession').value.trim(),
+            phone: document.getElementById('prof-phone').value.trim(),
+            clinic_address: document.getElementById('prof-address').value.trim(),
+            working_hours: workingHours
+          });
+          const avatar = document.getElementById('profile-avatar');
+          avatar.textContent = initials(name);
+          avatar.style.background = avatarColor(name);
+          document.getElementById('sidebar-user-name').textContent = name;
+          document.getElementById('sidebar-avatar').textContent = initials(name);
+          showToast('פרופיל נשמר ✅', 'success');
+        } catch (err) { showToast('שגיאה: ' + err.message, 'error'); }
+        finally { btn.disabled = false; btn.textContent = 'שמירת פרופיל'; }
+      });
+
+      document.getElementById('save-hours-btn').addEventListener('click', async () => {
+        workingHours = collectWorkingHours();
+        const btn = document.getElementById('save-hours-btn');
+        btn.disabled = true; btn.textContent = 'שומר...';
+        try {
+          await upsertTherapistProfile({ user_id: userId, working_hours: workingHours });
+          showToast('שעות עבודה נשמרו ✅', 'success');
+        } catch (err) { showToast('שגיאה: ' + err.message, 'error'); }
+        finally { btn.disabled = false; btn.textContent = 'שמירת שעות'; }
+      });
+
+      document.getElementById('save-reminders-btn').addEventListener('click', () => {
+        const settings = {
+          reminder24h: document.getElementById('reminder-24h').checked,
+          reminder1h: document.getElementById('reminder-1h').checked,
+          template: document.getElementById('reminder-template').value
+        };
+        localStorage.setItem('reminder_settings', JSON.stringify(settings));
+        showToast('הגדרות תזכורות נשמרו ✅', 'success');
+      });
+    }
+
+    async function changePassword() {
+      const user = await getCurrentUser();
+      if (!user) return;
+      try {
+        await sb.auth.resetPasswordForEmail(user.email);
+        showToast('📧 נשלח קישור לשינוי סיסמה לאימייל שלך', 'success');
+      } catch { showToast('שגיאה בשליחת קישור', 'error'); }
+    }
+
+    function confirmDelete() {
+      if (confirm('האם אתה בטוח? פעולה זו תמחק את כל הנתונים שלך לצמיתות.')) {
+        showToast('מחיקת חשבון — צור קשר עם התמיכה', 'info');
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>לוח בקרה — CliniqAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-text">✦ CliniqAI</div>
+        <div class="logo-sub">ניהול קליניקה חכם</div>
+      </div>
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">?</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="sidebar-user-name">טוען...</div>
+          <div class="sidebar-user-role" id="sidebar-user-role">מטפל/ת</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/dashboard.html" class="active"><span class="nav-icon">🏠</span> לוח בקרה</a>
+        <a href="/calendar.html"><span class="nav-icon">📅</span> יומן</a>
+        <a href="/patients.html"><span class="nav-icon">👥</span> מטופלים</a>
+        <a href="#" onclick="showToast('בקרוב!','info')"><span class="nav-icon">💬</span> הודעות</a>
+        <a href="#" onclick="showToast('בקרוב!','info')"><span class="nav-icon">📊</span> דוחות</a>
+        <a href="/settings.html"><span class="nav-icon">⚙️</span> הגדרות</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logout-btn"><span>🚪</span> התנתקות</button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">שלום, <span id="greeting-name">מטפל/ת</span> 👋</h1>
+          <p class="page-subtitle" id="today-date">טוען תאריך...</p>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-outline" onclick="window.location.href='/patients.html'">👤 מטופל חדש</button>
+          <button class="btn btn-primary" onclick="openModal('modal-new-appt')">📅 + תור חדש</button>
+        </div>
+      </div>
+
+      <!-- Stat Cards -->
+      <div class="grid grid-4" style="margin-bottom:28px">
+        <div class="stat-card teal">
+          <div class="stat-label">תורים היום</div>
+          <div class="stat-icon teal">📅</div>
+          <div class="stat-value" id="stat-today">—</div>
+          <div class="stat-sub">פגישות מתוכננות</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-label">מטופלים פעילים</div>
+          <div class="stat-icon purple">👥</div>
+          <div class="stat-value" id="stat-patients">—</div>
+          <div class="stat-sub">מטופלים במעקב</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">טיפולים החודש</div>
+          <div class="stat-icon green">✅</div>
+          <div class="stat-value" id="stat-month">—</div>
+          <div class="stat-sub">טיפולים שהושלמו</div>
+        </div>
+        <div class="stat-card gold">
+          <div class="stat-label">הבא בתור</div>
+          <div class="stat-icon gold">⏰</div>
+          <div class="stat-value" id="stat-next" style="font-size:1.1rem;line-height:1.4">—</div>
+          <div class="stat-sub" id="stat-next-name">אין תור קרוב</div>
+        </div>
+      </div>
+
+      <!-- Middle Row -->
+      <div style="display:grid;grid-template-columns:60% 40%;gap:24px;margin-bottom:28px" id="mid-grid">
+
+        <!-- Today's Appointments -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">📅 תורים היום</h3>
+            <a href="/calendar.html" style="font-size:0.8rem;color:var(--primary)">כל היומן ←</a>
+          </div>
+          <div id="today-appts-list">
+            <div class="skeleton" style="height:60px;margin-bottom:8px"></div>
+            <div class="skeleton" style="height:60px;margin-bottom:8px"></div>
+            <div class="skeleton" style="height:60px"></div>
+          </div>
+        </div>
+
+        <!-- Quick Actions + Mini Cal -->
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <div class="card">
+            <h3 class="card-title" style="margin-bottom:16px">⚡ פעולות מהירות</h3>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button class="quick-action" onclick="openModal('modal-new-appt')">
+                <div class="quick-action-icon">📅</div>
+                <div>
+                  <div class="quick-action-text">תור חדש</div>
+                  <div class="quick-action-sub">קבעי פגישה</div>
+                </div>
+              </button>
+              <button class="quick-action" onclick="window.location.href='/patients.html'">
+                <div class="quick-action-icon" style="background:var(--secondary-bg)">👤</div>
+                <div>
+                  <div class="quick-action-text">מטופל חדש</div>
+                  <div class="quick-action-sub">הוספת מטופל</div>
+                </div>
+              </button>
+              <button class="quick-action" id="send-reminders-btn">
+                <div class="quick-action-icon" style="background:var(--accent-bg)">📤</div>
+                <div>
+                  <div class="quick-action-text">שלחי תזכורות</div>
+                  <div class="quick-action-sub">לכל תורי מחר</div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div class="card" style="padding:16px">
+            <div id="mini-cal-widget"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Patients -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">👥 מטופלים אחרונים</h3>
+          <a href="/patients.html" style="font-size:0.8rem;color:var(--primary)">כל המטופלים ←</a>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>מטופל</th>
+                <th>טלפון</th>
+                <th>סוג טיפול</th>
+                <th>תור אחרון</th>
+                <th>סטטוס</th>
+                <th>פעולות</th>
+              </tr>
+            </thead>
+            <tbody id="recent-patients-list">
+              <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted)">טוען...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- New Appointment Modal -->
+  <div class="modal-overlay" id="modal-new-appt" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">📅 תור חדש</h2>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">מטופל</label>
+          <input type="text" class="form-input" id="appt-patient-search" placeholder="חפשי שם מטופל...">
+          <input type="hidden" id="appt-patient-id">
+        </div>
+        <div class="form-group">
+          <label class="form-label">סוג טיפול</label>
+          <select class="form-input" id="appt-type">
+            <option value="">בחרי סוג</option>
+            <option>טיפול פרטני</option>
+            <option>טיפול זוגי</option>
+            <option>טיפול משפחתי</option>
+            <option>ייעוץ ראשוני</option>
+            <option>מעקב</option>
+            <option>אחר</option>
+          </select>
+        </div>
+        <div class="grid grid-2">
+          <div class="form-group">
+            <label class="form-label">תאריך</label>
+            <input type="date" class="form-input" id="appt-date">
+          </div>
+          <div class="form-group">
+            <label class="form-label">שעה</label>
+            <input type="time" class="form-input" id="appt-time" value="10:00">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">משך הפגישה</label>
+          <select class="form-input" id="appt-duration">
+            <option value="30">30 דקות</option>
+            <option value="45">45 דקות</option>
+            <option value="60" selected>60 דקות</option>
+            <option value="90">90 דקות</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">הערות</label>
+          <textarea class="form-input" id="appt-notes" placeholder="הערות לפגישה..." style="min-height:80px"></textarea>
+        </div>
+        <div class="toggle-wrapper">
+          <div>
+            <div class="toggle-label">שלחי תזכורת</div>
+            <div class="toggle-desc">תזכורת וואטסאפ יום לפני הפגישה</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="appt-reminder" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="save-appt-btn">שמירה</button>
+        <button class="btn btn-ghost" onclick="closeModal('modal-new-appt')">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/supabase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    let therapistId = null;
+
+    async function init() {
+      const user = await requireAuth();
+      if (!user) return;
+
+      initLogout();
+      initMobileSidebar();
+      initModals();
+
+      const profile = await getTherapistProfile(user.id);
+      therapistId = profile?.id;
+
+      // Greeting
+      const nameEl = document.getElementById('greeting-name');
+      const sidebarName = document.getElementById('sidebar-user-name');
+      const sidebarRole = document.getElementById('sidebar-user-role');
+      const sidebarAvatar = document.getElementById('sidebar-avatar');
+      if (profile) {
+        const firstName = (profile.full_name || '').split(' ')[0];
+        nameEl.textContent = firstName || 'מטפל/ת';
+        sidebarName.textContent = profile.full_name || user.email;
+        sidebarRole.textContent = profile.profession || 'מטפל/ת';
+        sidebarAvatar.textContent = initials(profile.full_name || user.email);
+      }
+
+      // Date
+      document.getElementById('today-date').textContent = formatDate(new Date(), { weekday: 'long' });
+
+      // Set today's date in modal
+      document.getElementById('appt-date').value = new Date().toISOString().split('T')[0];
+
+      if (!therapistId) {
+        showToast('אנא השלימי את פרופיל הקליניקה בהגדרות', 'info');
+        loadMockData();
+        return;
+      }
+
+      await Promise.all([loadStats(), loadTodayAppts(), loadRecentPatients()]);
+      initPatientSearch('appt-patient-search', 'appt-patient-id', therapistId);
+      renderMiniCal(document.getElementById('mini-cal-widget'), new Date(), (date) => {
+        window.location.href = `/calendar.html?date=${date}`;
+      });
+    }
+
+    async function loadStats() {
+      const stats = await getDashboardStats(therapistId);
+      document.getElementById('stat-today').textContent = stats.todayCount;
+      document.getElementById('stat-patients').textContent = stats.activePatients;
+      document.getElementById('stat-month').textContent = stats.monthTreatments;
+      if (stats.nextAppt) {
+        document.getElementById('stat-next').textContent = formatTime(stats.nextAppt.date_time);
+        document.getElementById('stat-next-name').textContent = stats.nextAppt.patients?.full_name || '';
+      } else {
+        document.getElementById('stat-next').textContent = 'אין';
+        document.getElementById('stat-next-name').textContent = 'תורים נוספים היום';
+      }
+    }
+
+    async function loadTodayAppts() {
+      const today = new Date().toISOString().split('T')[0];
+      const appts = await getAppointments(therapistId, { date: today });
+      const container = document.getElementById('today-appts-list');
+
+      if (appts.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding:40px 20px">
+            <div class="empty-state-icon">📅</div>
+            <h3>אין תורים היום</h3>
+            <p>לחצי על "+ תור חדש" כדי להוסיף</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = appts.map(a => `
+        <div class="appt-item">
+          <div class="appt-time">${formatTime(a.date_time)}</div>
+          <div style="width:36px;height:36px;border-radius:50%;background:${avatarColor(a.patients?.full_name)};display:flex;align-items:center;justify-content:center;color:white;font-size:0.75rem;font-weight:700;flex-shrink:0">
+            ${initials(a.patients?.full_name || '?')}
+          </div>
+          <div class="appt-info">
+            <div class="appt-name">${a.patients?.full_name || 'לא ידוע'}</div>
+            <div class="appt-type">${a.treatment_type || ''} · ${a.duration || 60} דקות</div>
+          </div>
+          ${statusBadge(a.status)}
+          <div class="appt-actions">
+            <button class="btn-whatsapp" onclick="openWhatsApp('${a.patients?.phone || ''}', 'שלום, מזכיר/ה לך על הפגישה שלנו היום בשעה ${formatTime(a.date_time)}')">💬</button>
+            <button class="btn btn-ghost btn-sm" onclick="window.location.href='/patient.html?id=${a.patient_id}'">צפה</button>
+            <select class="form-input" style="width:auto;font-size:0.75rem;padding:5px 8px" onchange="updateApptStatus('${a.id}', this.value)">
+              <option value="pending" ${a.status==='pending'?'selected':''}>ממתין</option>
+              <option value="confirmed" ${a.status==='confirmed'?'selected':''}>אושר</option>
+              <option value="cancelled" ${a.status==='cancelled'?'selected':''}>בוטל</option>
+            </select>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadRecentPatients() {
+      const patients = await getPatients(therapistId);
+      const recent = patients.slice(0, 5);
+      const tbody = document.getElementById('recent-patients-list');
+      if (recent.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted)">אין מטופלים עדיין</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = recent.map(p => `
+        <tr onclick="window.location.href='/patient.html?id=${p.id}'">
+          <td>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="avatar" style="background:${avatarColor(p.full_name)}">${initials(p.full_name)}</div>
+              <span style="font-weight:600">${p.full_name}</span>
+            </div>
+          </td>
+          <td style="color:var(--text-secondary)">${p.phone || '—'}</td>
+          <td style="color:var(--text-secondary)">${p.treatment_type || '—'}</td>
+          <td style="color:var(--text-secondary)">${formatDate(p.created_at, { day:'numeric', month:'short' })}</td>
+          <td>${statusBadge(p.status)}</td>
+          <td onclick="event.stopPropagation()">
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-ghost btn-sm" onclick="window.location.href='/patient.html?id=${p.id}'">צפה</button>
+              <button class="btn-whatsapp btn-sm" onclick="openWhatsApp('${p.phone}')">💬</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function updateApptStatus(id, status) {
+      try {
+        await updateAppointment(id, { status });
+        showToast('סטטוס עודכן', 'success');
+      } catch {
+        showToast('שגיאה בעדכון', 'error');
+      }
+    }
+
+    // Save appointment
+    document.getElementById('save-appt-btn').addEventListener('click', async () => {
+      const patientId = document.getElementById('appt-patient-id').value;
+      const type = document.getElementById('appt-type').value;
+      const date = document.getElementById('appt-date').value;
+      const time = document.getElementById('appt-time').value;
+      const duration = document.getElementById('appt-duration').value;
+      const notes = document.getElementById('appt-notes').value;
+
+      if (!patientId) { showToast('אנא בחרי מטופל', 'error'); return; }
+      if (!date || !time) { showToast('אנא מלאי תאריך ושעה', 'error'); return; }
+
+      const btn = document.getElementById('save-appt-btn');
+      btn.disabled = true; btn.textContent = 'שומר...';
+
+      try {
+        await createAppointment({
+          therapist_id: therapistId,
+          patient_id: patientId,
+          date_time: `${date}T${time}:00`,
+          duration: parseInt(duration),
+          treatment_type: type,
+          notes,
+          status: 'confirmed'
+        });
+        showToast('תור נוסף בהצלחה! 🎉', 'success');
+        closeModal('modal-new-appt');
+        await Promise.all([loadStats(), loadTodayAppts()]);
+      } catch (err) {
+        showToast('שגיאה בשמירת התור: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false; btn.textContent = 'שמירה';
+      }
+    });
+
+    // Send reminders
+    document.getElementById('send-reminders-btn').addEventListener('click', async () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+      const appts = await getAppointments(therapistId, { date: tomorrowStr });
+      if (appts.length === 0) { showToast('אין תורים מחר לשליחת תזכורות', 'info'); return; }
+
+      let sent = 0;
+      for (const a of appts) {
+        try {
+          await apiPost('/api/send-reminder', {
+            phone: a.patients?.phone,
+            patientName: a.patients?.full_name,
+            dateTime: formatDateTime(a.date_time),
+            therapistName: document.getElementById('sidebar-user-name').textContent
+          });
+          sent++;
+        } catch {}
+      }
+      showToast(`נשלחו ${sent} תזכורות לתורי מחר`, 'success');
+    });
+
+    function loadMockData() {
+      document.getElementById('stat-today').textContent = '5';
+      document.getElementById('stat-patients').textContent = '47';
+      document.getElementById('stat-month').textContent = '23';
+      document.getElementById('stat-next').textContent = '14:00';
+      document.getElementById('stat-next-name').textContent = 'רחל לוי';
+      document.getElementById('today-appts-list').innerHTML = `
+        <div class="empty-state" style="padding:30px">
+          <div class="empty-state-icon">🔗</div>
+          <h3>חברי Supabase כדי לראות נתונים</h3>
+          <p>עדכני את SUPABASE_URL ו-SUPABASE_ANON_KEY</p>
+        </div>`;
+      renderMiniCal(document.getElementById('mini-cal-widget'), new Date(), () => {});
+    }
+
+    init();
+  </script>
+</body>
+</html>

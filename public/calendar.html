@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>יומן — CliniqAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    .week-grid { display: grid; grid-template-columns: 60px repeat(7, 1fr); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+    .week-header { display: contents; }
+    .week-header-cell { padding: 12px 8px; text-align: center; font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); background: var(--surface-2); border-bottom: 1px solid var(--border); border-left: 1px solid var(--border-light); }
+    .week-header-cell.today-col { background: var(--primary-bg); color: var(--primary); }
+    .week-header-cell:first-child { border-left: none; }
+    .week-time-col { font-size: 0.7rem; color: var(--text-muted); padding: 0 6px; text-align: center; border-left: 1px solid var(--border-light); background: var(--surface-2); }
+    .week-time-row { display: contents; }
+    .week-cell { height: 52px; border-bottom: 1px solid var(--border-light); border-left: 1px solid var(--border-light); position: relative; cursor: pointer; transition: background var(--transition); }
+    .week-cell:hover { background: rgba(13,148,136,0.04); }
+    .week-cell.today-col { background: rgba(13,148,136,0.02); }
+    .week-time-label { height: 52px; display: flex; align-items: flex-start; justify-content: center; font-size: 0.7rem; color: var(--text-muted); padding-top: 4px; background: var(--surface-2); border-bottom: 1px solid var(--border-light); border-left: 1px solid var(--border-light); }
+    .week-appt {
+      position: absolute; inset: 2px 3px; border-radius: 5px; padding: 3px 6px; font-size: 0.72rem; font-weight: 600; color: white; overflow: hidden; cursor: pointer; z-index: 2; transition: all var(--transition);
+    }
+    .week-appt:hover { filter: brightness(1.1); transform: scale(1.02); }
+    .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border); border-radius: var(--radius); overflow: hidden; }
+    .month-day { background: var(--surface); padding: 8px; min-height: 100px; cursor: pointer; transition: background var(--transition); }
+    .month-day:hover { background: var(--surface-2); }
+    .month-day.other-month { background: var(--surface-2); opacity: 0.6; }
+    .month-day.today { background: var(--primary-bg); }
+    .month-day-num { font-size: 0.8rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .month-day.today .month-day-num { color: var(--primary); }
+    .month-appt-dot { font-size: 0.68rem; color: white; background: var(--primary); border-radius: 3px; padding: 1px 4px; margin-bottom: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-text">✦ CliniqAI</div>
+        <div class="logo-sub">ניהול קליניקה חכם</div>
+      </div>
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">?</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="sidebar-user-name">טוען...</div>
+          <div class="sidebar-user-role" id="sidebar-user-role">מטפל/ת</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/dashboard.html"><span class="nav-icon">🏠</span> לוח בקרה</a>
+        <a href="/calendar.html" class="active"><span class="nav-icon">📅</span> יומן</a>
+        <a href="/patients.html"><span class="nav-icon">👥</span> מטופלים</a>
+        <a href="#" onclick="showToast('בקרוב!','info')"><span class="nav-icon">💬</span> הודעות</a>
+        <a href="#" onclick="showToast('בקרוב!','info')"><span class="nav-icon">📊</span> דוחות</a>
+        <a href="/settings.html"><span class="nav-icon">⚙️</span> הגדרות</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logout-btn"><span>🚪</span> התנתקות</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">📅 יומן</h1>
+          <p class="page-subtitle">ניהול תורים ופגישות</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modal-new-appt')">+ תור חדש</button>
+      </div>
+
+      <!-- Calendar Controls -->
+      <div class="card" style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="btn btn-ghost btn-sm" id="cal-prev-btn">‹</button>
+            <h2 id="cal-display-title" style="font-size:1.1rem;font-weight:700;min-width:180px;text-align:center">טוען...</h2>
+            <button class="btn btn-ghost btn-sm" id="cal-next-btn">›</button>
+            <button class="btn btn-outline btn-sm" id="cal-today-btn">היום</button>
+          </div>
+          <div class="cal-view-toggle">
+            <button class="cal-view-btn" data-view="day">יום</button>
+            <button class="cal-view-btn active" data-view="week">שבוע</button>
+            <button class="cal-view-btn" data-view="month">חודש</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Calendar Body -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="cal-body" style="overflow-x:auto">
+          <div style="padding:40px;text-align:center;color:var(--text-muted)">טוען יומן...</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- FAB -->
+  <button class="fab" onclick="openModal('modal-new-appt')" title="תור חדש">+</button>
+
+  <!-- New Appointment Modal -->
+  <div class="modal-overlay" id="modal-new-appt" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">📅 תור חדש</h2>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">מטופל</label>
+          <input type="text" class="form-input" id="appt-patient-search" placeholder="חפשי שם מטופל...">
+          <input type="hidden" id="appt-patient-id">
+        </div>
+        <div class="form-group">
+          <label class="form-label">סוג טיפול</label>
+          <select class="form-input" id="appt-type">
+            <option value="">בחרי סוג</option>
+            <option>טיפול פרטני</option>
+            <option>טיפול זוגי</option>
+            <option>טיפול משפחתי</option>
+            <option>ייעוץ ראשוני</option>
+            <option>מעקב</option>
+            <option>אחר</option>
+          </select>
+        </div>
+        <div class="grid grid-2">
+          <div class="form-group">
+            <label class="form-label">תאריך</label>
+            <input type="date" class="form-input" id="appt-date">
+          </div>
+          <div class="form-group">
+            <label class="form-label">שעה</label>
+            <input type="time" class="form-input" id="appt-time" value="10:00">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">משך הפגישה</label>
+          <select class="form-input" id="appt-duration">
+            <option value="30">30 דקות</option>
+            <option value="45">45 דקות</option>
+            <option value="60" selected>60 דקות</option>
+            <option value="90">90 דקות</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">הערות</label>
+          <textarea class="form-input" id="appt-notes" placeholder="הערות לפגישה..." style="min-height:80px"></textarea>
+        </div>
+        <div class="toggle-wrapper">
+          <div>
+            <div class="toggle-label">שלחי תזכורת</div>
+            <div class="toggle-desc">תזכורת יום לפני הפגישה</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="appt-reminder" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="save-appt-btn">שמירה</button>
+        <button class="btn btn-ghost" onclick="closeModal('modal-new-appt')">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Appointment Detail Modal -->
+  <div class="modal-overlay" id="modal-appt-detail" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">פרטי תור</h2>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="modal-body" id="appt-detail-body">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger btn-sm" id="delete-appt-btn">מחק תור</button>
+        <button class="btn btn-ghost" onclick="closeModal('modal-appt-detail')">סגור</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/supabase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    const HOURS = Array.from({length: 25}, (_, i) => 8 + (i * 0.5)).filter(h => h <= 20);
+    const DAYS_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+    const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+    const STATUS_COLORS = { confirmed: '#0D9488', pending: '#F59E0B', cancelled: '#EF4444' };
+
+    let therapistId = null;
+    let currentDate = new Date();
+    let currentView = 'week';
+    let appointments = [];
+    let selectedApptId = null;
+
+    async function init() {
+      const user = await requireAuth();
+      if (!user) return;
+      initLogout(); initMobileSidebar(); initModals();
+
+      const profile = await getTherapistProfile(user.id);
+      therapistId = profile?.id;
+      await loadSidebarUser();
+
+      const urlDate = new URLSearchParams(window.location.search).get('date');
+      if (urlDate) currentDate = new Date(urlDate);
+
+      document.getElementById('appt-date').value = currentDate.toISOString().split('T')[0];
+
+      setupControls();
+      if (therapistId) {
+        await loadAppointments();
+        initPatientSearch('appt-patient-search', 'appt-patient-id', therapistId);
+      }
+      renderCalendar();
+    }
+
+    function setupControls() {
+      document.getElementById('cal-prev-btn').addEventListener('click', () => { navigate(-1); });
+      document.getElementById('cal-next-btn').addEventListener('click', () => { navigate(1); });
+      document.getElementById('cal-today-btn').addEventListener('click', () => { currentDate = new Date(); loadAndRender(); });
+      document.querySelectorAll('.cal-view-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.cal-view-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentView = btn.dataset.view;
+          renderCalendar();
+        });
+      });
+
+      document.getElementById('save-appt-btn').addEventListener('click', saveAppointment);
+    }
+
+    function navigate(dir) {
+      if (currentView === 'day') currentDate.setDate(currentDate.getDate() + dir);
+      else if (currentView === 'week') currentDate.setDate(currentDate.getDate() + dir * 7);
+      else currentDate.setMonth(currentDate.getMonth() + dir);
+      loadAndRender();
+    }
+
+    async function loadAndRender() {
+      await loadAppointments();
+      renderCalendar();
+    }
+
+    async function loadAppointments() {
+      if (!therapistId) return;
+      appointments = await getAppointments(therapistId);
+    }
+
+    function renderCalendar() {
+      updateTitle();
+      if (currentView === 'day') renderDay();
+      else if (currentView === 'week') renderWeek();
+      else renderMonth();
+    }
+
+    function updateTitle() {
+      const titles = {
+        day: formatDate(currentDate, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+        week: `שבוע ${getWeekStart().toLocaleDateString('he-IL', { day: 'numeric', month: 'short' })} – ${getWeekEnd().toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+        month: `${MONTHS_HE[currentDate.getMonth()]} ${currentDate.getFullYear()}`
+      };
+      document.getElementById('cal-display-title').textContent = titles[currentView];
+    }
+
+    function getWeekStart() {
+      const d = new Date(currentDate);
+      d.setDate(d.getDate() - d.getDay());
+      return d;
+    }
+    function getWeekEnd() {
+      const d = getWeekStart();
+      d.setDate(d.getDate() + 6);
+      return d;
+    }
+
+    function apptForSlot(dateStr, hour) {
+      return appointments.filter(a => {
+        const d = new Date(a.date_time);
+        const dStr = d.toISOString().split('T')[0];
+        const h = d.getHours() + d.getMinutes() / 60;
+        return dStr === dateStr && Math.floor(h * 2) === Math.floor(hour * 2);
+      });
+    }
+
+    function renderDay() {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      const slots = [];
+      for (let h = 8; h <= 20; h += 0.5) {
+        const hh = Math.floor(h).toString().padStart(2,'0');
+        const mm = h % 1 === 0.5 ? '30' : '00';
+        const label = h % 1 === 0 ? `${hh}:00` : '';
+        const dayAppts = apptForSlot(dateStr, h);
+        slots.push(`
+          <div class="time-grid">
+            <div class="time-labels"><div class="time-label">${label}</div></div>
+            <div class="time-slots">
+              <div class="time-slot" data-date="${dateStr}" data-time="${hh}:${mm}" onclick="clickSlot(this)">
+                ${dayAppts.map(a => `
+                  <div class="appt-block ${a.status}" style="background:${STATUS_COLORS[a.status]}" onclick="event.stopPropagation();showApptDetail('${a.id}')">
+                    ${formatTime(a.date_time)} · ${a.patients?.full_name || ''}
+                  </div>`).join('')}
+              </div>
+            </div>
+          </div>`);
+      }
+      document.getElementById('cal-body').innerHTML = `<div style="padding:16px;display:flex;flex-direction:column;gap:0">${slots.join('')}</div>`;
+    }
+
+    function renderWeek() {
+      const start = getWeekStart();
+      const days = Array.from({length:7}, (_, i) => {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        return d;
+      });
+      const today = new Date().toDateString();
+      const hours = [];
+      for (let h = 8; h <= 19.5; h += 0.5) {
+        const hh = Math.floor(h).toString().padStart(2,'0');
+        const mm = h % 1 === 0.5 ? '30' : '00';
+        const label = h % 1 === 0 ? `${hh}:00` : '';
+        hours.push({ h, hh, mm, label });
+      }
+
+      let html = `<div class="week-grid">
+        <div class="week-header-cell" style="background:var(--surface-2)"></div>
+        ${days.map(d => `
+          <div class="week-header-cell ${d.toDateString()===today?'today-col':''}">
+            <div style="font-size:0.72rem">${DAYS_HE[d.getDay()]}</div>
+            <div style="font-size:1.1rem;font-weight:800;margin-top:2px">${d.getDate()}</div>
+          </div>`).join('')}`;
+
+      hours.forEach(({ h, hh, mm, label }) => {
+        html += `<div class="week-time-label">${label}</div>`;
+        days.forEach(d => {
+          const dateStr = d.toISOString().split('T')[0];
+          const dayAppts = apptForSlot(dateStr, h);
+          html += `
+            <div class="week-cell ${d.toDateString()===today?'today-col':''}" data-date="${dateStr}" data-time="${hh}:${mm}" onclick="clickSlot(this)">
+              ${dayAppts.map(a => `
+                <div class="week-appt" style="background:${STATUS_COLORS[a.status] || '#0D9488'}" onclick="event.stopPropagation();showApptDetail('${a.id}')">
+                  ${formatTime(a.date_time)} ${a.patients?.full_name?.split(' ')[0] || ''}
+                </div>`).join('')}
+            </div>`;
+        });
+      });
+      html += '</div>';
+      document.getElementById('cal-body').innerHTML = `<div style="padding:16px">${html}</div>`;
+    }
+
+    function renderMonth() {
+      const y = currentDate.getFullYear();
+      const m = currentDate.getMonth();
+      const first = new Date(y, m, 1).getDay();
+      const days = new Date(y, m + 1, 0).getDate();
+      const today = new Date().toDateString();
+
+      let html = `<div style="padding:16px">
+        <div class="week-grid" style="grid-template-columns:repeat(7,1fr)">
+          ${DAYS_HE.map(d => `<div class="week-header-cell">${d}</div>`).join('')}`;
+
+      let day = 1;
+      for (let r = 0; r < 6; r++) {
+        for (let c = 0; c < 7; c++) {
+          const idx = r * 7 + c;
+          const offset = first;
+          if (idx < offset || day > days) {
+            html += '<div class="month-day other-month"></div>';
+          } else {
+            const date = new Date(y, m, day);
+            const dateStr = date.toISOString().split('T')[0];
+            const isToday = date.toDateString() === today;
+            const dayAppts = appointments.filter(a => a.date_time.startsWith(dateStr));
+            html += `
+              <div class="month-day ${isToday?'today':''}" onclick="goToDay('${dateStr}')">
+                <div class="month-day-num">${day}</div>
+                ${dayAppts.slice(0,3).map(a => `
+                  <div class="month-appt-dot" style="background:${STATUS_COLORS[a.status]}" onclick="event.stopPropagation();showApptDetail('${a.id}')">
+                    ${formatTime(a.date_time)} ${a.patients?.full_name?.split(' ')[0] || ''}
+                  </div>`).join('')}
+                ${dayAppts.length > 3 ? `<div style="font-size:0.65rem;color:var(--text-muted)">+${dayAppts.length-3} נוספים</div>` : ''}
+              </div>`;
+            day++;
+          }
+        }
+        if (day > days) break;
+      }
+      html += '</div></div>';
+      document.getElementById('cal-body').innerHTML = html;
+    }
+
+    function clickSlot(el) {
+      const date = el.dataset.date;
+      const time = el.dataset.time;
+      document.getElementById('appt-date').value = date;
+      document.getElementById('appt-time').value = time;
+      openModal('modal-new-appt');
+    }
+
+    function goToDay(dateStr) {
+      currentDate = new Date(dateStr);
+      currentView = 'day';
+      document.querySelectorAll('.cal-view-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.view === 'day');
+      });
+      renderCalendar();
+    }
+
+    function showApptDetail(id) {
+      selectedApptId = id;
+      const a = appointments.find(x => x.id === id);
+      if (!a) return;
+      document.getElementById('appt-detail-body').innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="avatar" style="background:${avatarColor(a.patients?.full_name)};width:48px;height:48px;font-size:1.1rem">${initials(a.patients?.full_name || '?')}</div>
+            <div>
+              <div style="font-size:1.1rem;font-weight:700">${a.patients?.full_name || 'לא ידוע'}</div>
+              <div style="font-size:0.8rem;color:var(--text-muted)">${a.patients?.phone || ''}</div>
+            </div>
+          </div>
+          <div class="grid grid-2" style="gap:12px">
+            <div><div style="font-size:0.75rem;color:var(--text-muted)">תאריך</div><div style="font-weight:600">${formatDate(a.date_time)}</div></div>
+            <div><div style="font-size:0.75rem;color:var(--text-muted)">שעה</div><div style="font-weight:600">${formatTime(a.date_time)}</div></div>
+            <div><div style="font-size:0.75rem;color:var(--text-muted)">משך</div><div style="font-weight:600">${a.duration} דקות</div></div>
+            <div><div style="font-size:0.75rem;color:var(--text-muted)">סוג</div><div style="font-weight:600">${a.treatment_type || '—'}</div></div>
+          </div>
+          <div><div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">סטטוס</div>${statusBadge(a.status)}</div>
+          ${a.notes ? `<div><div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">הערות</div><div style="font-size:0.875rem">${a.notes}</div></div>` : ''}
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" onclick="window.location.href='/patient.html?id=${a.patient_id}'">פרופיל מטופל</button>
+            <button class="btn-whatsapp" onclick="openWhatsApp('${a.patients?.phone}','שלום, מזכיר/ה לך על הפגישה ב-${formatDateTime(a.date_time)}')">💬 וואטסאפ</button>
+            <select class="form-input" style="width:auto;font-size:0.78rem;padding:6px 10px" onchange="updateStatus('${a.id}',this.value)">
+              <option value="pending" ${a.status==='pending'?'selected':''}>ממתין</option>
+              <option value="confirmed" ${a.status==='confirmed'?'selected':''}>אושר</option>
+              <option value="cancelled" ${a.status==='cancelled'?'selected':''}>בוטל</option>
+            </select>
+          </div>
+        </div>`;
+      openModal('modal-appt-detail');
+    }
+
+    async function updateStatus(id, status) {
+      try {
+        await updateAppointment(id, { status });
+        showToast('סטטוס עודכן', 'success');
+        await loadAndRender();
+        closeModal('modal-appt-detail');
+      } catch { showToast('שגיאה', 'error'); }
+    }
+
+    document.getElementById('delete-appt-btn').addEventListener('click', async () => {
+      if (!selectedApptId) return;
+      if (!confirm('האם למחוק את התור?')) return;
+      try {
+        await deleteAppointment(selectedApptId);
+        showToast('תור נמחק', 'success');
+        closeModal('modal-appt-detail');
+        await loadAndRender();
+      } catch { showToast('שגיאה במחיקה', 'error'); }
+    });
+
+    async function saveAppointment() {
+      const patientId = document.getElementById('appt-patient-id').value;
+      const type = document.getElementById('appt-type').value;
+      const date = document.getElementById('appt-date').value;
+      const time = document.getElementById('appt-time').value;
+      const duration = document.getElementById('appt-duration').value;
+      const notes = document.getElementById('appt-notes').value;
+      if (!patientId) { showToast('אנא בחרי מטופל', 'error'); return; }
+      if (!date || !time) { showToast('אנא מלאי תאריך ושעה', 'error'); return; }
+      const btn = document.getElementById('save-appt-btn');
+      btn.disabled = true; btn.textContent = 'שומר...';
+      try {
+        await createAppointment({ therapist_id: therapistId, patient_id: patientId, date_time: `${date}T${time}:00`, duration: parseInt(duration), treatment_type: type, notes, status: 'confirmed' });
+        showToast('תור נוסף! 🎉', 'success');
+        closeModal('modal-new-appt');
+        await loadAndRender();
+      } catch (err) { showToast('שגיאה: ' + err.message, 'error'); }
+      finally { btn.disabled = false; btn.textContent = 'שמירה'; }
+    }
+
+    init();
+  </script>
+</body>
+</html>
