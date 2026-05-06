@@ -193,15 +193,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">סוג טיפול</label>
-          <select class="form-input" id="appt-type">
-            <option value="">בחרי סוג</option>
-            <option>טיפול פרטני</option>
-            <option>טיפול זוגי</option>
-            <option>טיפול משפחתי</option>
-            <option>ייעוץ ראשוני</option>
-            <option>מעקב</option>
-            <option>אחר</option>
-          </select>
+          <input type="text" class="form-input" id="appt-type" list="treatment-types" placeholder="הקלידי או בחרי...">
         </div>
         <div class="grid grid-2">
           <div class="form-group">
@@ -271,17 +263,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">סוג טיפול עיקרי</label>
-            <select class="form-input" id="pnd-treatment">
-              <option value="">בחרי סוג</option>
-              <option>טיפול פרטני</option>
-              <option>טיפול זוגי</option>
-              <option>טיפול משפחתי</option>
-              <option>טיפול CBT</option>
-              <option>טיפול EMDR</option>
-              <option>פיזיותרפיה</option>
-              <option>נטורופתיה</option>
-              <option>אחר</option>
-            </select>
+            <input type="text" class="form-input" id="pnd-treatment" list="treatment-types" placeholder="הקלידי או בחרי...">
           </div>
           <div class="form-group" style="grid-column:1/-1">
             <label class="form-label">הערות כלליות</label>
@@ -353,6 +335,9 @@
       if (stats.nextAppt) {
         document.getElementById('stat-next').textContent = formatTime(stats.nextAppt.date_time);
         document.getElementById('stat-next-name').textContent = stats.nextAppt.patients?.full_name || '';
+        const goldCard = document.querySelector('.stat-card.gold');
+        goldCard.dataset.apptId = stats.nextAppt.id;
+        goldCard.dataset.apptDate = stats.nextAppt.date_time.split('T')[0];
       } else {
         document.getElementById('stat-next').textContent = 'אין';
         document.getElementById('stat-next-name').textContent = 'תורים נוספים היום';
@@ -361,7 +346,9 @@
 
     async function loadTodayAppts() {
       const today = new Date().toISOString().split('T')[0];
-      const appts = await getAppointments(therapistId, { date: today });
+      const now = new Date();
+      const appts = (await getAppointments(therapistId, { date: today }))
+        .filter(a => new Date(a.date_time) > now);
       const container = document.getElementById('today-appts-list');
 
       if (appts.length === 0) {
@@ -532,7 +519,12 @@
         const nav = card.dataset.nav;
         if (nav === 'calendar-today') window.location.href = '/calendar.html?date=' + new Date().toISOString().split('T')[0];
         else if (nav === 'patients') window.location.href = '/patients.html';
-        else if (nav === 'calendar') window.location.href = '/calendar.html';
+        else if (nav === 'calendar') {
+          const apptId = card.dataset.apptId;
+          const apptDate = card.dataset.apptDate;
+          if (apptId && apptDate) window.location.href = `/calendar.html?date=${apptDate}&appt=${apptId}`;
+          else window.location.href = '/calendar.html';
+        }
       });
     });
 
@@ -583,5 +575,26 @@
 
     init();
   </script>
+
+  <datalist id="treatment-types">
+    <option>טיפול פרטני</option>
+    <option>טיפול זוגי</option>
+    <option>טיפול משפחתי</option>
+    <option>טיפול קבוצתי</option>
+    <option>CBT</option>
+    <option>EMDR</option>
+    <option>DBT</option>
+    <option>ACT</option>
+    <option>פסיכודינמי</option>
+    <option>הדרכת הורים</option>
+    <option>טיפול בחרדה</option>
+    <option>טיפול בטראומה</option>
+    <option>פגישת אינטייק</option>
+    <option>מעקב</option>
+    <option>פיזיותרפיה</option>
+    <option>נטורופתיה</option>
+    <option>רפלקסולוגיה</option>
+    <option>דיקור סיני</option>
+  </datalist>
 </body>
 </html>

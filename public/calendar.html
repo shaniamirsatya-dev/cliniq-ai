@@ -116,15 +116,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">סוג טיפול</label>
-          <select class="form-input" id="appt-type">
-            <option value="">בחרי סוג</option>
-            <option>טיפול פרטני</option>
-            <option>טיפול זוגי</option>
-            <option>טיפול משפחתי</option>
-            <option>ייעוץ ראשוני</option>
-            <option>מעקב</option>
-            <option>אחר</option>
-          </select>
+          <input type="text" class="form-input" id="appt-type" list="treatment-types" placeholder="הקלידי או בחרי...">
         </div>
         <div class="grid grid-2">
           <div class="form-group">
@@ -212,6 +204,13 @@
     const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
     const STATUS_COLORS = { confirmed: '#0D9488', pending: '#F59E0B', cancelled: '#EF4444' };
 
+    function localDateStr(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
     let therapistId = null;
     let currentDate = new Date();
     let currentView = window.innerWidth <= 768 ? 'day' : 'week';
@@ -230,7 +229,7 @@
       const urlDate = new URLSearchParams(window.location.search).get('date');
       if (urlDate) currentDate = new Date(urlDate);
 
-      document.getElementById('appt-date').value = currentDate.toISOString().split('T')[0];
+      document.getElementById('appt-date').value = localDateStr(currentDate);
 
       // Sync active view button with currentView (handles mobile day-default)
       document.querySelectorAll('.cal-view-btn').forEach(b => {
@@ -243,6 +242,9 @@
         initPatientSearch('appt-patient-search', 'appt-patient-id', therapistId);
       }
       renderCalendar();
+
+      const urlAppt = new URLSearchParams(window.location.search).get('appt');
+      if (urlAppt) setTimeout(() => showApptDetail(urlAppt), 150);
     }
 
     function setupControls() {
@@ -308,14 +310,14 @@
     function apptForSlot(dateStr, hour) {
       return appointments.filter(a => {
         const d = new Date(a.date_time);
-        const dStr = d.toISOString().split('T')[0];
+        const dStr = localDateStr(d);
         const h = d.getHours() + d.getMinutes() / 60;
         return dStr === dateStr && Math.floor(h * 2) === Math.floor(hour * 2);
       });
     }
 
     function renderDay() {
-      const dateStr = currentDate.toISOString().split('T')[0];
+      const dateStr = localDateStr(currentDate);
       const slots = [];
       for (let h = 8; h <= 20; h += 0.5) {
         const hh = Math.floor(h).toString().padStart(2,'0');
@@ -365,7 +367,7 @@
       hours.forEach(({ h, hh, mm, label }) => {
         html += `<div class="week-time-label">${label}</div>`;
         days.forEach(d => {
-          const dateStr = d.toISOString().split('T')[0];
+          const dateStr = localDateStr(d);
           const dayAppts = apptForSlot(dateStr, h);
           html += `
             <div class="week-cell ${d.toDateString()===today?'today-col':''}" data-date="${dateStr}" data-time="${hh}:${mm}" onclick="clickSlot(this)">
@@ -400,9 +402,9 @@
             html += '<div class="month-day other-month"></div>';
           } else {
             const date = new Date(y, m, day);
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = localDateStr(date);
             const isToday = date.toDateString() === today;
-            const dayAppts = appointments.filter(a => a.date_time.startsWith(dateStr));
+            const dayAppts = appointments.filter(a => localDateStr(new Date(a.date_time)) === dateStr);
             html += `
               <div class="month-day ${isToday?'today':''}" onclick="goToDay('${dateStr}')">
                 <div class="month-day-num">${day}</div>
@@ -533,5 +535,26 @@
 
     init();
   </script>
+
+  <datalist id="treatment-types">
+    <option>טיפול פרטני</option>
+    <option>טיפול זוגי</option>
+    <option>טיפול משפחתי</option>
+    <option>טיפול קבוצתי</option>
+    <option>CBT</option>
+    <option>EMDR</option>
+    <option>DBT</option>
+    <option>ACT</option>
+    <option>פסיכודינמי</option>
+    <option>הדרכת הורים</option>
+    <option>טיפול בחרדה</option>
+    <option>טיפול בטראומה</option>
+    <option>פגישת אינטייק</option>
+    <option>מעקב</option>
+    <option>פיזיותרפיה</option>
+    <option>נטורופתיה</option>
+    <option>רפלקסולוגיה</option>
+    <option>דיקור סיני</option>
+  </datalist>
 </body>
 </html>

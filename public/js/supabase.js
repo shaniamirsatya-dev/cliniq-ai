@@ -161,16 +161,17 @@ async function updateTreatmentNote(noteId, updates) {
 
 // ===== STATS =====
 async function getDashboardStats(therapistId) {
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
-  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
+  const now = new Date();
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-  const [todayAppts, activePatients, monthTreatments] = await Promise.all([
+  const [futureToday, activePatients, monthTreatments] = await Promise.all([
     sb.from('appointments')
-      .select('*', { count: 'exact' })
+      .select('*, patients(full_name, phone)', { count: 'exact' })
       .eq('therapist_id', therapistId)
-      .gte('date_time', `${todayStr}T00:00:00`)
-      .lte('date_time', `${todayStr}T23:59:59`),
+      .gte('date_time', now.toISOString())
+      .lte('date_time', todayEnd.toISOString())
+      .order('date_time', { ascending: true }),
     sb.from('patients')
       .select('*', { count: 'exact' })
       .eq('therapist_id', therapistId)
@@ -183,10 +184,10 @@ async function getDashboardStats(therapistId) {
   ]);
 
   return {
-    todayCount: todayAppts.count || 0,
+    todayCount: futureToday.count || 0,
     activePatients: activePatients.count || 0,
     monthTreatments: monthTreatments.count || 0,
-    nextAppt: todayAppts.data?.[0] || null
+    nextAppt: futureToday.data?.[0] || null
   };
 }
 

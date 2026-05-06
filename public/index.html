@@ -140,18 +140,23 @@
           </div>
           <div class="form-group">
             <label class="form-label">סוג מקצוע</label>
-            <select class="form-input" id="reg-profession">
-              <option value="">בחרי מקצוע</option>
-              <option value="פסיכולוג/ית קלינית">פסיכולוג/ית קלינית</option>
-              <option value="עובד/ת סוציאלי/ת">עובד/ת סוציאלי/ת</option>
-              <option value="מטפל/ת זוגי ומשפחתי">מטפל/ת זוגי ומשפחתי</option>
-              <option value="פיזיותרפיסט/ית">פיזיותרפיסט/ית</option>
-              <option value="דיקור ורפואה סינית">דיקור ורפואה סינית</option>
-              <option value="נטורופת">נטורופת</option>
-              <option value="רפלקסולוג/ית">רפלקסולוג/ית</option>
-              <option value="אוסטאופת">אוסטאופת</option>
-              <option value="אחר">אחר</option>
-            </select>
+            <input type="text" class="form-input" id="reg-profession" list="profession-list" placeholder="הקלידי או בחרי מקצוע...">
+            <datalist id="profession-list">
+              <option>פסיכולוג/ית קלינית</option>
+              <option>פסיכותרפיסט/ית</option>
+              <option>מטפל/ת CBT</option>
+              <option>מטפל/ת EMDR</option>
+              <option>עובד/ת סוציאלי/ת קלינית</option>
+              <option>פיזיותרפיסט/ית</option>
+              <option>נטורופת/ית</option>
+              <option>דיאטן/ית קליני/ת</option>
+              <option>מרפא/ה בעיסוק</option>
+              <option>הומאופת/ית</option>
+              <option>רפלקסולוג/ית</option>
+              <option>דיקור סיני</option>
+              <option>מאמן/ת אישי/ת</option>
+              <option>יועץ/ת זוגי/ת ומשפחתי/ת</option>
+            </datalist>
           </div>
           <button type="submit" class="btn btn-secondary btn-lg" style="width:100%;margin-top:4px" id="register-btn">
             <span id="reg-spinner" style="display:none" class="spin">⟳</span>
