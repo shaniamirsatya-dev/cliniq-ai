@@ -203,7 +203,7 @@
       if (!user) return;
       initLogout(); initMobileSidebar(); initModals();
 
-      const profile = await getTherapistProfile(user.id);
+      const profile = await ensureTherapistProfile(user);
       therapistId = profile?.id;
       await loadSidebarUser();
 
@@ -417,33 +417,52 @@
       selectedApptId = id;
       const a = appointments.find(x => x.id === id);
       if (!a) return;
-      document.getElementById('appt-detail-body').innerHTML = `
+
+      const body = document.getElementById('appt-detail-body');
+      body.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:12px">
           <div style="display:flex;align-items:center;gap:12px">
             <div class="avatar" style="background:${avatarColor(a.patients?.full_name)};width:48px;height:48px;font-size:1.1rem">${initials(a.patients?.full_name || '?')}</div>
             <div>
-              <div style="font-size:1.1rem;font-weight:700">${a.patients?.full_name || 'לא ידוע'}</div>
-              <div style="font-size:0.8rem;color:var(--text-muted)">${a.patients?.phone || ''}</div>
+              <div class="detail-name" style="font-size:1.1rem;font-weight:700"></div>
+              <div class="detail-phone" style="font-size:0.8rem;color:var(--text-muted)"></div>
             </div>
           </div>
           <div class="grid grid-2" style="gap:12px">
             <div><div style="font-size:0.75rem;color:var(--text-muted)">תאריך</div><div style="font-weight:600">${formatDate(a.date_time)}</div></div>
             <div><div style="font-size:0.75rem;color:var(--text-muted)">שעה</div><div style="font-weight:600">${formatTime(a.date_time)}</div></div>
-            <div><div style="font-size:0.75rem;color:var(--text-muted)">משך</div><div style="font-weight:600">${a.duration} דקות</div></div>
-            <div><div style="font-size:0.75rem;color:var(--text-muted)">סוג</div><div style="font-weight:600">${a.treatment_type || '—'}</div></div>
+            <div><div style="font-size:0.75rem;color:var(--text-muted)">משך</div><div style="font-weight:600">${Number(a.duration)} דקות</div></div>
+            <div><div style="font-size:0.75rem;color:var(--text-muted)">סוג</div><div class="detail-type" style="font-weight:600"></div></div>
           </div>
           <div><div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">סטטוס</div>${statusBadge(a.status)}</div>
-          ${a.notes ? `<div><div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">הערות</div><div style="font-size:0.875rem">${a.notes}</div></div>` : ''}
+          ${a.notes ? `<div><div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">הערות</div><div class="detail-notes" style="font-size:0.875rem"></div></div>` : ''}
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-primary btn-sm" onclick="window.location.href='/patient.html?id=${a.patient_id}'">פרופיל מטופל</button>
-            <button class="btn-whatsapp" onclick="openWhatsApp('${a.patients?.phone}','שלום, מזכיר/ה לך על הפגישה ב-${formatDateTime(a.date_time)}')">💬 וואטסאפ</button>
-            <select class="form-input" style="width:auto;font-size:0.78rem;padding:6px 10px" onchange="updateStatus('${a.id}',this.value)">
+            <button class="btn btn-primary btn-sm" id="detail-profile-btn">פרופיל מטופל</button>
+            <button class="btn-whatsapp" id="detail-wa-btn">💬 וואטסאפ</button>
+            <select class="form-input" style="width:auto;font-size:0.78rem;padding:6px 10px" id="detail-status-sel">
               <option value="pending" ${a.status==='pending'?'selected':''}>ממתין</option>
               <option value="confirmed" ${a.status==='confirmed'?'selected':''}>אושר</option>
               <option value="cancelled" ${a.status==='cancelled'?'selected':''}>בוטל</option>
             </select>
           </div>
         </div>`;
+
+      // Set user data safely via textContent
+      body.querySelector('.detail-name').textContent = a.patients?.full_name || 'לא ידוע';
+      body.querySelector('.detail-phone').textContent = a.patients?.phone || '';
+      body.querySelector('.detail-type').textContent = a.treatment_type || '—';
+      if (body.querySelector('.detail-notes')) body.querySelector('.detail-notes').textContent = a.notes || '';
+
+      body.querySelector('#detail-profile-btn').addEventListener('click', () => {
+        window.location.href = `/patient.html?id=${a.patient_id}`;
+      });
+      body.querySelector('#detail-wa-btn').addEventListener('click', () => {
+        openWhatsApp(a.patients?.phone, `שלום, מזכיר/ה לך על הפגישה ב-${formatDateTime(a.date_time)}`);
+      });
+      body.querySelector('#detail-status-sel').addEventListener('change', (e) => {
+        updateStatus(a.id, e.target.value);
+      });
+
       openModal('modal-appt-detail');
     }
 

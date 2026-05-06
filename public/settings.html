@@ -182,7 +182,7 @@
       if (!user) return;
       initLogout(); initMobileSidebar();
 
-      const profile = await getTherapistProfile(user.id);
+      const profile = await ensureTherapistProfile(user);
       therapistId = profile?.id;
       await loadSidebarUser();
 

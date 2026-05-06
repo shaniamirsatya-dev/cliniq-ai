@@ -71,6 +71,31 @@
         <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:4px">ברוכים הבאים 👋</h2>
         <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:24px">נהלו את הקליניקה שלכם בצורה חכמה</p>
 
+        <!-- Google OAuth -->
+        <button type="button" id="google-btn" style="
+          display:flex;align-items:center;justify-content:center;gap:10px;
+          width:100%;padding:11px 20px;border-radius:8px;
+          border:1.5px solid #E2E8F0;background:#fff;
+          font-size:0.9rem;font-weight:600;color:#1E293B;
+          cursor:pointer;transition:all 0.2s;margin-bottom:20px;
+          font-family:inherit;
+        ">
+          <svg width="20" height="20" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.14 0 5.95 1.08 8.17 2.86l6.1-6.1C34.46 3.19 29.53 1 24 1 14.82 1 7.07 6.48 3.64 14.22l7.1 5.52C12.5 13.67 17.77 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.5 24.5c0-1.64-.15-3.22-.42-4.75H24v9h12.7c-.55 2.97-2.2 5.48-4.67 7.17l7.18 5.57C43.18 37.64 46.5 31.54 46.5 24.5z"/>
+            <path fill="#FBBC05" d="M10.74 28.26A14.5 14.5 0 0 1 9.5 24c0-1.48.26-2.91.74-4.26l-7.1-5.52A23.94 23.94 0 0 0 0 24c0 3.86.92 7.5 2.55 10.73l8.19-6.47z"/>
+            <path fill="#34A853" d="M24 47c5.53 0 10.17-1.83 13.56-4.97l-7.18-5.57C28.5 37.74 26.35 38.5 24 38.5c-6.23 0-11.5-4.17-13.26-9.74l-8.19 6.47C6.07 41.52 13.82 47 24 47z"/>
+          </svg>
+          התחברות עם Google
+        </button>
+
+        <!-- Separator -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+          <span style="font-size:0.78rem;color:var(--text-muted);white-space:nowrap">— או —</span>
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+        </div>
+
         <!-- Tab Toggle -->
         <div class="auth-tabs">
           <button class="auth-tab-btn active" data-auth="login">התחברות</button>
@@ -146,6 +171,29 @@
     // Redirect if already logged in
     redirectIfLoggedIn();
 
+    // Google OAuth button
+    const googleBtn = document.getElementById('google-btn');
+    googleBtn.addEventListener('mouseenter', () => {
+      googleBtn.style.background = '#F8FAFC';
+      googleBtn.style.borderColor = '#CBD5E1';
+    });
+    googleBtn.addEventListener('mouseleave', () => {
+      googleBtn.style.background = '#fff';
+      googleBtn.style.borderColor = '#E2E8F0';
+    });
+    googleBtn.addEventListener('click', async () => {
+      googleBtn.disabled = true;
+      googleBtn.style.opacity = '0.7';
+      try {
+        await signInWithGoogle();
+        // Supabase redirects the browser — no further action needed
+      } catch (err) {
+        showToast('שגיאה בהתחברות עם Google. נסי שוב.', 'error');
+        googleBtn.disabled = false;
+        googleBtn.style.opacity = '1';
+      }
+    });
+
     // Tab switching
     const tabBtns = document.querySelectorAll('.auth-tab-btn');
     const loginForm = document.getElementById('login-form');
@@ -208,12 +256,13 @@
       btn.disabled = true;
 
       try {
-        const { user } = await signUp(email, password, { full_name: name, profession });
-        if (user) {
-          await upsertTherapistProfile({ user_id: user.id, full_name: name, profession });
+        const { user, session } = await signUp(email, password, { full_name: name, profession });
+        if (session) {
+          // Session active immediately (email confirmation disabled) — trigger already created therapist row
           window.location.href = '/dashboard.html';
-        } else {
-          successEl.textContent = '📧 נשלח אימייל אישור לכתובתך. בדקי את תיבת הדואר.';
+        } else if (user) {
+          // Email confirmation required — show message
+          successEl.textContent = '📧 נשלח אימייל אישור לכתובתך. לאחר האישור תוכלי להתחבר.';
           successEl.style.display = 'block';
         }
       } catch (err) {

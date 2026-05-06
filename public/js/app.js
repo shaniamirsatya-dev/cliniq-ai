@@ -1,5 +1,16 @@
 // Shared utilities and UI components
 
+// ===== XSS PROTECTION =====
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ===== TOAST =====
 let toastContainer = null;
 
@@ -152,11 +163,15 @@ function openWhatsApp(phone, message = '') {
   window.open(url, '_blank');
 }
 
-// ===== API CALL =====
+// ===== API CALL (sends Supabase JWT for server-side auth) =====
 async function apiPost(endpoint, body) {
+  const { data: { session } } = await sb.auth.getSession();
   const res = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session?.access_token || ''}`
+    },
     body: JSON.stringify(body)
   });
   if (!res.ok) {

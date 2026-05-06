@@ -1,6 +1,6 @@
 // Supabase client initialization
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://xpqyrtrgeoqzfxovxtrd.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_jGGFZ8SnCA543RNFSw7n2g_Acd0456j';
 
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -16,15 +16,28 @@ async function getTherapistProfile(userId) {
     .from('therapists')
     .select('*')
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
   if (error) console.error('getTherapistProfile error:', error);
   return data;
 }
 
 async function upsertTherapistProfile(profile) {
-  const { data, error } = await sb.from('therapists').upsert(profile).select().single();
+  const { data, error } = await sb.from('therapists').upsert(profile, { onConflict: 'user_id' }).select().single();
   if (error) throw error;
   return data;
+}
+
+// Fetch profile, and create it if missing (handles users who registered before the DB trigger was added)
+async function ensureTherapistProfile(user) {
+  let profile = await getTherapistProfile(user.id);
+  if (!profile) {
+    profile = await upsertTherapistProfile({
+      user_id: user.id,
+      full_name: user.user_metadata?.full_name || '',
+      profession: user.user_metadata?.profession || ''
+    });
+  }
+  return profile;
 }
 
 // ===== PATIENTS =====

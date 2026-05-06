@@ -269,7 +269,7 @@
       if (!user) return;
       initLogout(); initMobileSidebar(); initModals(); initTabs();
 
-      const profile = await getTherapistProfile(user.id);
+      const profile = await ensureTherapistProfile(user);
       therapistId = profile?.id;
       await loadSidebarUser();
 
@@ -296,24 +296,33 @@
       const color = avatarColor(patient.full_name);
       const ini = initials(patient.full_name);
 
-      document.getElementById('patient-header').innerHTML = `
+      const header = document.getElementById('patient-header');
+      header.innerHTML = `
         <div class="avatar avatar-xl" style="background:${color}">${ini}</div>
         <div class="patient-info">
-          <h1 class="patient-name">${patient.full_name}</h1>
+          <h1 class="patient-name"></h1>
           <div class="patient-meta">
-            ${patient.phone ? `<div class="patient-meta-item">📞 ${patient.phone}</div>` : ''}
-            ${patient.email ? `<div class="patient-meta-item">✉️ ${patient.email}</div>` : ''}
+            ${patient.phone ? `<div class="patient-meta-item">📞 <span class="p-phone"></span></div>` : ''}
+            ${patient.email ? `<div class="patient-meta-item">✉️ <span class="p-email"></span></div>` : ''}
             ${age ? `<div class="patient-meta-item">🎂 גיל ${age}</div>` : ''}
-            ${patient.treatment_type ? `<div class="patient-meta-item">🩺 ${patient.treatment_type}</div>` : ''}
+            ${patient.treatment_type ? `<div class="patient-meta-item">🩺 <span class="p-type"></span></div>` : ''}
           </div>
-          ${patient.notes ? `<div style="margin-top:10px;font-size:0.8rem;color:var(--text-muted);padding:8px 12px;background:var(--surface-2);border-radius:6px;max-width:600px">${patient.notes}</div>` : ''}
+          ${patient.notes ? `<div class="p-notes" style="margin-top:10px;font-size:0.8rem;color:var(--text-muted);padding:8px 12px;background:var(--surface-2);border-radius:6px;max-width:600px"></div>` : ''}
         </div>
         <div class="patient-actions">
-          ${patient.phone ? `<a href="tel:${patient.phone}" class="btn btn-ghost btn-sm">📞 התקשר</a>` : ''}
-          ${patient.phone ? `<button class="btn-whatsapp btn-sm" onclick="openWhatsApp('${patient.phone}')">💬 וואטסאפ</button>` : ''}
+          ${patient.phone ? `<a href="tel:${escapeHTML(patient.phone)}" class="btn btn-ghost btn-sm">📞 התקשר</a>` : ''}
+          ${patient.phone ? `<button class="btn-whatsapp btn-sm" id="wa-btn">💬 וואטסאפ</button>` : ''}
           <button class="btn btn-outline btn-sm" onclick="window.location.href='/calendar.html'">📅 קבע תור</button>
           <button class="btn btn-ghost btn-sm" onclick="openEditModal()">✏️ ערוך</button>
         </div>`;
+
+      // Set text safely via textContent (no XSS)
+      header.querySelector('.patient-name').textContent = patient.full_name;
+      if (header.querySelector('.p-phone')) header.querySelector('.p-phone').textContent = patient.phone;
+      if (header.querySelector('.p-email')) header.querySelector('.p-email').textContent = patient.email;
+      if (header.querySelector('.p-type')) header.querySelector('.p-type').textContent = patient.treatment_type;
+      if (header.querySelector('.p-notes')) header.querySelector('.p-notes').textContent = patient.notes;
+      if (header.querySelector('#wa-btn')) header.querySelector('#wa-btn').addEventListener('click', () => openWhatsApp(patient.phone));
     }
 
     async function loadHistory() {
@@ -330,23 +339,31 @@
         return;
       }
 
-      container.innerHTML = notes.map(n => `
+      // Build structure with escapeHTML, then set free-text via textContent
+      container.innerHTML = notes.map((n, i) => `
         <div class="treatment-note-item">
           <div class="treatment-note-date">
-            ${formatDate(n.created_at)} · ${n.appointments?.treatment_type || ''}
+            ${formatDate(n.created_at)} · ${escapeHTML(n.appointments?.treatment_type || '')}
           </div>
-          <div class="treatment-note-content">${n.content || ''}</div>
+          <div class="treatment-note-content" data-note-idx="${i}"></div>
           ${n.ai_summary ? `
             <div style="margin-top:12px;padding:10px 12px;background:var(--secondary-bg);border-radius:8px;font-size:0.8rem">
               <div style="font-weight:700;color:var(--secondary);margin-bottom:4px">🤖 סיכום AI</div>
-              <div style="color:var(--text)">${n.ai_summary}</div>
+              <div data-ai-idx="${i}"></div>
             </div>` : ''}
         </div>`).join('');
+
+      notes.forEach((n, i) => {
+        const contentEl = container.querySelector(`[data-note-idx="${i}"]`);
+        if (contentEl) contentEl.textContent = n.content || '';
+        const aiEl = container.querySelector(`[data-ai-idx="${i}"]`);
+        if (aiEl) aiEl.textContent = n.ai_summary || '';
+      });
     }
 
     function setupSaveNote() {
       document.getElementById('save-note-btn').addEventListener('click', async () => {
-        const content = document.getElementById('note-content').value.trim();
+        const content = document.getElementById('note-content').value.trim().slice(0, 5000);
         if (!content) { showToast('אנא מלאי את סיכום הטיפול', 'error'); return; }
         const btn = document.getElementById('save-note-btn');
         btn.disabled = true; btn.textContent = 'שומר...';

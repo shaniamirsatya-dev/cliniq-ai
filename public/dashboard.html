@@ -238,7 +238,7 @@
       initMobileSidebar();
       initModals();
 
-      const profile = await getTherapistProfile(user.id);
+      const profile = await ensureTherapistProfile(user);
       therapistId = profile?.id;
 
       // Greeting
@@ -302,28 +302,46 @@
         return;
       }
 
-      container.innerHTML = appts.map(a => `
+      container.innerHTML = appts.map(a => {
+        const name = escapeHTML(a.patients?.full_name || 'לא ידוע');
+        const phone = escapeHTML(a.patients?.phone || '');
+        const type = escapeHTML(a.treatment_type || '');
+        const pid = escapeHTML(a.patient_id);
+        const aid = escapeHTML(a.id);
+        const time = formatTime(a.date_time);
+        return `
         <div class="appt-item">
-          <div class="appt-time">${formatTime(a.date_time)}</div>
+          <div class="appt-time">${time}</div>
           <div style="width:36px;height:36px;border-radius:50%;background:${avatarColor(a.patients?.full_name)};display:flex;align-items:center;justify-content:center;color:white;font-size:0.75rem;font-weight:700;flex-shrink:0">
             ${initials(a.patients?.full_name || '?')}
           </div>
           <div class="appt-info">
-            <div class="appt-name">${a.patients?.full_name || 'לא ידוע'}</div>
-            <div class="appt-type">${a.treatment_type || ''} · ${a.duration || 60} דקות</div>
+            <div class="appt-name">${name}</div>
+            <div class="appt-type">${type} · ${a.duration || 60} דקות</div>
           </div>
           ${statusBadge(a.status)}
           <div class="appt-actions">
-            <button class="btn-whatsapp" onclick="openWhatsApp('${a.patients?.phone || ''}', 'שלום, מזכיר/ה לך על הפגישה שלנו היום בשעה ${formatTime(a.date_time)}')">💬</button>
-            <button class="btn btn-ghost btn-sm" onclick="window.location.href='/patient.html?id=${a.patient_id}'">צפה</button>
-            <select class="form-input" style="width:auto;font-size:0.75rem;padding:5px 8px" onchange="updateApptStatus('${a.id}', this.value)">
+            <button class="btn-whatsapp" data-phone="${phone}" data-time="${time}">💬</button>
+            <button class="btn btn-ghost btn-sm" data-patient="${pid}">צפה</button>
+            <select class="form-input" style="width:auto;font-size:0.75rem;padding:5px 8px" data-appt="${aid}">
               <option value="pending" ${a.status==='pending'?'selected':''}>ממתין</option>
               <option value="confirmed" ${a.status==='confirmed'?'selected':''}>אושר</option>
               <option value="cancelled" ${a.status==='cancelled'?'selected':''}>בוטל</option>
             </select>
           </div>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
+
+      // Wire up events after rendering (avoids inline onclick with user data)
+      container.querySelectorAll('.btn-whatsapp[data-phone]').forEach(btn => {
+        btn.addEventListener('click', () => openWhatsApp(btn.dataset.phone, `שלום, מזכיר/ה לך על הפגישה שלנו היום בשעה ${btn.dataset.time}`));
+      });
+      container.querySelectorAll('.btn[data-patient]').forEach(btn => {
+        btn.addEventListener('click', () => { window.location.href = `/patient.html?id=${btn.dataset.patient}`; });
+      });
+      container.querySelectorAll('select[data-appt]').forEach(sel => {
+        sel.addEventListener('change', () => updateApptStatus(sel.dataset.appt, sel.value));
+      });
     }
 
     async function loadRecentPatients() {
@@ -335,25 +353,38 @@
         return;
       }
       tbody.innerHTML = recent.map(p => `
-        <tr onclick="window.location.href='/patient.html?id=${p.id}'">
+        <tr data-pid="${escapeHTML(p.id)}" style="cursor:pointer">
           <td>
             <div style="display:flex;align-items:center;gap:10px">
               <div class="avatar" style="background:${avatarColor(p.full_name)}">${initials(p.full_name)}</div>
-              <span style="font-weight:600">${p.full_name}</span>
+              <span style="font-weight:600">${escapeHTML(p.full_name)}</span>
             </div>
           </td>
-          <td style="color:var(--text-secondary)">${p.phone || '—'}</td>
-          <td style="color:var(--text-secondary)">${p.treatment_type || '—'}</td>
+          <td style="color:var(--text-secondary)">${escapeHTML(p.phone || '—')}</td>
+          <td style="color:var(--text-secondary)">${escapeHTML(p.treatment_type || '—')}</td>
           <td style="color:var(--text-secondary)">${formatDate(p.created_at, { day:'numeric', month:'short' })}</td>
           <td>${statusBadge(p.status)}</td>
-          <td onclick="event.stopPropagation()">
+          <td>
             <div style="display:flex;gap:6px">
-              <button class="btn btn-ghost btn-sm" onclick="window.location.href='/patient.html?id=${p.id}'">צפה</button>
-              <button class="btn-whatsapp btn-sm" onclick="openWhatsApp('${p.phone}')">💬</button>
+              <button class="btn btn-ghost btn-sm" data-pid="${escapeHTML(p.id)}">צפה</button>
+              <button class="btn-whatsapp btn-sm" data-phone="${escapeHTML(p.phone || '')}">💬</button>
             </div>
           </td>
         </tr>
       `).join('');
+
+      tbody.querySelectorAll('tr[data-pid]').forEach(row => {
+        row.addEventListener('click', (e) => {
+          if (e.target.closest('button')) return;
+          window.location.href = `/patient.html?id=${row.dataset.pid}`;
+        });
+      });
+      tbody.querySelectorAll('button[data-pid]').forEach(btn => {
+        btn.addEventListener('click', () => { window.location.href = `/patient.html?id=${btn.dataset.pid}`; });
+      });
+      tbody.querySelectorAll('.btn-whatsapp[data-phone]').forEach(btn => {
+        btn.addEventListener('click', () => openWhatsApp(btn.dataset.phone));
+      });
     }
 
     async function updateApptStatus(id, status) {
