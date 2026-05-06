@@ -3,12 +3,20 @@ const SUPABASE_URL = 'https://xpqyrtrgeoqzfxovxtrd.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_jGGFZ8SnCA543RNFSw7n2g_Acd0456j';
 
 const { createClient } = supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    storageKey: 'cliniq-auth',
+    storage: window.localStorage,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
+});
 
 // ===== AUTH HELPERS =====
 async function getCurrentUser() {
-  const { data: { user } } = await sb.auth.getUser();
-  return user;
+  const { data: { session } } = await sb.auth.getSession();
+  return session?.user || null;
 }
 
 async function getTherapistProfile(userId) {

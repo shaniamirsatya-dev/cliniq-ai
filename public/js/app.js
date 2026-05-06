@@ -237,6 +237,133 @@ function renderMiniCal(container, selectedDate, onSelect) {
   render();
 }
 
+// ===== CUSTOM SELECT DROPDOWN =====
+const CUSTOM_SELECT_OPTIONS = {
+  treatment: [
+    'טיפול פרטני', 'טיפול זוגי', 'טיפול משפחתי', 'טיפול קבוצתי',
+    'CBT', 'EMDR', 'DBT', 'ACT', 'פסיכודינמי', 'הדרכת הורים',
+    'טיפול בחרדה', 'טיפול בטראומה', 'פגישת אינטייק', 'מעקב',
+    'פיזיותרפיה', 'נטורופתיה', 'רפלקסולוגיה', 'דיקור סיני'
+  ],
+  profession: [
+    'פסיכולוג/ית קלינית', 'פסיכותרפיסט/ית', 'מטפל/ת CBT', 'מטפל/ת EMDR',
+    'עובד/ת סוציאלי/ת קלינית', 'פיזיותרפיסט/ית', 'נטורופת/ית',
+    'דיאטן/ית קליני/ת', 'מרפא/ה בעיסוק', 'הומאופת/ית', 'רפלקסולוג/ית',
+    'דיקור סיני', 'מאמן/ת אישי/ת', 'יועץ/ת זוגי/ת ומשפחתי/ת'
+  ]
+};
+
+function initCustomSelect(inputEl, options) {
+  inputEl.setAttribute('readonly', '');
+  inputEl.style.cursor = 'pointer';
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'custom-select-dropdown';
+  document.body.appendChild(dropdown);
+
+  const searchInput = document.createElement('input');
+  searchInput.type = 'text';
+  searchInput.className = 'custom-select-search';
+  searchInput.placeholder = 'חיפוש...';
+  searchInput.setAttribute('autocomplete', 'off');
+
+  const listEl = document.createElement('div');
+  listEl.className = 'custom-select-list';
+
+  dropdown.appendChild(searchInput);
+  dropdown.appendChild(listEl);
+
+  let isOpen = false;
+
+  function renderList(q) {
+    const lower = (q || '').toLowerCase();
+    const filtered = lower ? options.filter(o => o.toLowerCase().includes(lower)) : options;
+    listEl.innerHTML = '';
+
+    filtered.forEach(opt => {
+      const item = document.createElement('div');
+      item.className = 'custom-select-option';
+      item.textContent = opt;
+      item.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        inputEl.value = opt;
+        inputEl.setAttribute('readonly', '');
+        inputEl.style.cursor = 'pointer';
+        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+        close();
+      });
+      listEl.appendChild(item);
+    });
+
+    const other = document.createElement('div');
+    other.className = 'custom-select-option custom-select-other';
+    other.textContent = 'אחר - הכנס ידנית';
+    other.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      inputEl.value = '';
+      inputEl.removeAttribute('readonly');
+      inputEl.style.cursor = '';
+      inputEl.placeholder = 'הכנס ידנית...';
+      close();
+      setTimeout(() => inputEl.focus(), 50);
+    });
+    listEl.appendChild(other);
+  }
+
+  function position() {
+    const rect = inputEl.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    dropdown.style.left = rect.left + 'px';
+    dropdown.style.width = rect.width + 'px';
+    if (spaceBelow > 180 || spaceBelow >= rect.top) {
+      dropdown.style.top = (rect.bottom + 2) + 'px';
+      dropdown.style.bottom = 'auto';
+    } else {
+      dropdown.style.bottom = (window.innerHeight - rect.top + 2) + 'px';
+      dropdown.style.top = 'auto';
+    }
+  }
+
+  function open() {
+    if (isOpen) return;
+    isOpen = true;
+    searchInput.value = '';
+    renderList('');
+    position();
+    dropdown.classList.add('open');
+    setTimeout(() => searchInput.focus(), 50);
+  }
+
+  function close() {
+    if (!isOpen) return;
+    isOpen = false;
+    dropdown.classList.remove('open');
+  }
+
+  inputEl.addEventListener('click', open);
+  searchInput.addEventListener('input', () => renderList(searchInput.value));
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { close(); inputEl.focus(); }
+  });
+
+  document.addEventListener('pointerdown', (e) => {
+    if (isOpen && !dropdown.contains(e.target) && e.target !== inputEl) close();
+  });
+
+  window.addEventListener('resize', () => { if (isOpen) position(); });
+  window.addEventListener('scroll', () => { if (isOpen) position(); }, true);
+}
+
+function initCustomSelects() {
+  document.querySelectorAll('[data-custom-select]').forEach(input => {
+    const type = input.dataset.customSelect;
+    const opts = CUSTOM_SELECT_OPTIONS[type];
+    if (opts) initCustomSelect(input, opts);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initCustomSelects);
+
 // ===== PATIENT SELECT SEARCH =====
 async function initPatientSearch(inputId, hiddenId, therapistId) {
   const input = document.getElementById(inputId);

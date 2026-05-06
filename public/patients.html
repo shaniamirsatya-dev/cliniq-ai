@@ -104,9 +104,13 @@
       <span class="bottom-nav-label">מטופלים</span>
     </a>
     <a href="/settings.html" class="bottom-nav-item">
-      <span class="bottom-nav-icon">⚙️</span>
-      <span class="bottom-nav-label">הגדרות</span>
+      <span class="bottom-nav-icon">👤</span>
+      <span class="bottom-nav-label">פרופיל</span>
     </a>
+    <button class="bottom-nav-item" id="bottom-logout-btn">
+      <span class="bottom-nav-icon">🚪</span>
+      <span class="bottom-nav-label">יציאה</span>
+    </button>
   </nav>
 
   <!-- FAB -->
@@ -139,7 +143,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">סוג טיפול עיקרי</label>
-            <input type="text" class="form-input" id="p-treatment" list="treatment-types" placeholder="הקלידי או בחרי...">
+            <input type="text" class="form-input" id="p-treatment" data-custom-select="treatment" placeholder="הקלידי או בחרי...">
           </div>
           <div class="form-group" style="grid-column:1/-1">
             <label class="form-label">הערות כלליות</label>
@@ -383,25 +387,5 @@
     init();
   </script>
 
-  <datalist id="treatment-types">
-    <option>טיפול פרטני</option>
-    <option>טיפול זוגי</option>
-    <option>טיפול משפחתי</option>
-    <option>טיפול קבוצתי</option>
-    <option>CBT</option>
-    <option>EMDR</option>
-    <option>DBT</option>
-    <option>ACT</option>
-    <option>פסיכודינמי</option>
-    <option>הדרכת הורים</option>
-    <option>טיפול בחרדה</option>
-    <option>טיפול בטראומה</option>
-    <option>פגישת אינטייק</option>
-    <option>מעקב</option>
-    <option>פיזיותרפיה</option>
-    <option>נטורופתיה</option>
-    <option>רפלקסולוגיה</option>
-    <option>דיקור סיני</option>
-  </datalist>
 </body>
 </html>

@@ -4,17 +4,17 @@ const AUTH_REDIRECT = '/index.html';
 const DASHBOARD_REDIRECT = '/dashboard.html';
 
 async function requireAuth() {
-  const user = await getCurrentUser();
-  if (!user) {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) {
     window.location.href = AUTH_REDIRECT;
     return null;
   }
-  return user;
+  return session.user;
 }
 
 async function redirectIfLoggedIn() {
-  const user = await getCurrentUser();
-  if (user) {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
     window.location.href = DASHBOARD_REDIRECT;
   }
 }
@@ -75,11 +75,16 @@ async function loadSidebarUser() {
   }
 }
 
-// Wire up logout button
+// Wire up logout buttons (sidebar + mobile bottom nav)
 function initLogout() {
-  const btn = document.getElementById('logout-btn');
-  if (btn) btn.addEventListener('click', signOut);
+  document.getElementById('logout-btn')?.addEventListener('click', signOut);
+  document.getElementById('bottom-logout-btn')?.addEventListener('click', signOut);
 }
+
+// Redirect to login on session expiry / sign-out
+sb.auth.onAuthStateChange((event) => {
+  if (event === 'SIGNED_OUT') window.location.href = AUTH_REDIRECT;
+});
 
 // Mobile sidebar toggle
 function initMobileSidebar() {
