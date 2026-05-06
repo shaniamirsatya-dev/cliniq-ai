@@ -143,7 +143,24 @@
           </div>
           <div class="form-group">
             <label class="form-label">סוג טיפול עיקרי</label>
-            <input type="text" class="form-input" id="p-treatment" data-custom-select="treatment" placeholder="הקלידי או בחרי...">
+            <select class="form-input" id="p-treatment" data-with-other>
+              <option value="">בחרי סוג טיפול</option>
+              <option value="CBT">CBT — קוגניטיבי-התנהגותי</option>
+              <option value="EMDR">EMDR</option>
+              <option value="DBT">DBT</option>
+              <option value="ACT">ACT</option>
+              <option value="פסיכותרפיה">פסיכותרפיה</option>
+              <option value="פסיכודינמי">פסיכודינמי</option>
+              <option value="פסיכואנליטי">פסיכואנליטי</option>
+              <option value="מיינדפולנס">מיינדפולנס</option>
+              <option value="טיפול זוגי">טיפול זוגי</option>
+              <option value="טיפול משפחתי">טיפול משפחתי</option>
+              <option value="טיפול קבוצתי">טיפול קבוצתי</option>
+              <option value="ילדים ונוער">ילדים ונוער</option>
+              <option value="טיפול בטראומה">טיפול בטראומה</option>
+              <option value="other">אחר (הכנס ידנית)</option>
+            </select>
+            <input type="text" class="form-input" id="p-treatment-other" placeholder="הכנסי סוג טיפול ידנית..." style="display:none;margin-top:8px">
           </div>
           <div class="form-group" style="grid-column:1/-1">
             <label class="form-label">הערות כלליות</label>
@@ -362,7 +379,7 @@
             phone,
             email,
             birth_date: document.getElementById('p-birth').value || null,
-            treatment_type: document.getElementById('p-treatment').value,
+            treatment_type: getSelectValue('p-treatment'),
             notes,
             status: 'active'
           });
@@ -372,7 +389,7 @@
           document.getElementById('p-phone').value = '';
           document.getElementById('p-email').value = '';
           document.getElementById('p-birth').value = '';
-          document.getElementById('p-treatment').value = '';
+          resetSelect('p-treatment');
           document.getElementById('p-notes').value = '';
           await loadPatients();
           window.location.href = `/patient.html?id=${patient.id}`;

@@ -230,7 +230,24 @@
         </div>
         <div class="form-group">
           <label class="form-label">סוג טיפול</label>
-          <input type="text" class="form-input" id="edit-treatment" data-custom-select="treatment" placeholder="הקלידי או בחרי...">
+          <select class="form-input" id="edit-treatment" data-with-other>
+            <option value="">בחרי סוג טיפול</option>
+            <option value="CBT">CBT — קוגניטיבי-התנהגותי</option>
+            <option value="EMDR">EMDR</option>
+            <option value="DBT">DBT</option>
+            <option value="ACT">ACT</option>
+            <option value="פסיכותרפיה">פסיכותרפיה</option>
+            <option value="פסיכודינמי">פסיכודינמי</option>
+            <option value="פסיכואנליטי">פסיכואנליטי</option>
+            <option value="מיינדפולנס">מיינדפולנס</option>
+            <option value="טיפול זוגי">טיפול זוגי</option>
+            <option value="טיפול משפחתי">טיפול משפחתי</option>
+            <option value="טיפול קבוצתי">טיפול קבוצתי</option>
+            <option value="ילדים ונוער">ילדים ונוער</option>
+            <option value="טיפול בטראומה">טיפול בטראומה</option>
+            <option value="other">אחר (הכנס ידנית)</option>
+          </select>
+          <input type="text" class="form-input" id="edit-treatment-other" placeholder="הכנסי סוג טיפול ידנית..." style="display:none;margin-top:8px">
         </div>
         <div class="form-group">
           <label class="form-label">הערות</label>
@@ -460,7 +477,7 @@
       document.getElementById('edit-name').value = patient.full_name || '';
       document.getElementById('edit-phone').value = patient.phone || '';
       document.getElementById('edit-email').value = patient.email || '';
-      document.getElementById('edit-treatment').value = patient.treatment_type || '';
+      setSelectValue('edit-treatment', patient.treatment_type || '');
       document.getElementById('edit-notes').value = patient.notes || '';
       openModal('modal-edit-patient');
     }
@@ -473,7 +490,7 @@
           full_name: name,
           phone: document.getElementById('edit-phone').value.trim(),
           email: document.getElementById('edit-email').value.trim(),
-          treatment_type: document.getElementById('edit-treatment').value.trim(),
+          treatment_type: getSelectValue('edit-treatment'),
           notes: document.getElementById('edit-notes').value.trim()
         });
         showToast('פרטי המטופל עודכנו ✅', 'success');

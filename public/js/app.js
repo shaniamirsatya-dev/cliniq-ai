@@ -362,7 +362,56 @@ function initCustomSelects() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', initCustomSelects);
+document.addEventListener('DOMContentLoaded', () => {
+  initCustomSelects(); // no-op: no [data-custom-select] elements remain
+  document.querySelectorAll('select[data-with-other]').forEach(initSelectWithOther);
+});
+
+// ===== NATIVE SELECT + "OTHER" HELPERS =====
+function initSelectWithOther(sel) {
+  const other = document.getElementById(sel.id + '-other');
+  if (!other) return;
+  sel.addEventListener('change', () => {
+    if (sel.value === 'other') {
+      other.style.display = 'block';
+      other.focus();
+    } else {
+      other.style.display = 'none';
+      other.value = '';
+    }
+  });
+}
+
+function getSelectValue(id) {
+  const el = document.getElementById(id);
+  if (!el) return '';
+  if (el.tagName === 'SELECT' && el.value === 'other') {
+    return (document.getElementById(id + '-other')?.value || '').trim();
+  }
+  return el.value;
+}
+
+function setSelectValue(id, value) {
+  const el = document.getElementById(id);
+  if (!el || el.tagName !== 'SELECT') { if (el) el.value = value; return; }
+  const match = Array.from(el.options).find(o => o.value === value);
+  if (match) {
+    el.value = value;
+  } else if (value) {
+    el.value = 'other';
+    const other = document.getElementById(id + '-other');
+    if (other) { other.value = value; other.style.display = 'block'; }
+  } else {
+    el.value = '';
+  }
+}
+
+function resetSelect(id) {
+  const el = document.getElementById(id);
+  if (el) el.value = '';
+  const other = document.getElementById(id + '-other');
+  if (other) { other.value = ''; other.style.display = 'none'; }
+}
 
 // ===== PATIENT SELECT SEARCH =====
 async function initPatientSearch(inputId, hiddenId, therapistId) {

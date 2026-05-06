@@ -197,7 +197,24 @@
         </div>
         <div class="form-group">
           <label class="form-label">סוג טיפול</label>
-          <input type="text" class="form-input" id="appt-type" data-custom-select="treatment" placeholder="הקלידי או בחרי...">
+          <select class="form-input" id="appt-type" data-with-other>
+            <option value="">בחרי סוג טיפול</option>
+            <option value="CBT">CBT — קוגניטיבי-התנהגותי</option>
+            <option value="EMDR">EMDR</option>
+            <option value="DBT">DBT</option>
+            <option value="ACT">ACT</option>
+            <option value="פסיכותרפיה">פסיכותרפיה</option>
+            <option value="פסיכודינמי">פסיכודינמי</option>
+            <option value="פסיכואנליטי">פסיכואנליטי</option>
+            <option value="מיינדפולנס">מיינדפולנס</option>
+            <option value="טיפול זוגי">טיפול זוגי</option>
+            <option value="טיפול משפחתי">טיפול משפחתי</option>
+            <option value="טיפול קבוצתי">טיפול קבוצתי</option>
+            <option value="ילדים ונוער">ילדים ונוער</option>
+            <option value="טיפול בטראומה">טיפול בטראומה</option>
+            <option value="other">אחר (הכנס ידנית)</option>
+          </select>
+          <input type="text" class="form-input" id="appt-type-other" placeholder="הכנסי סוג טיפול ידנית..." style="display:none;margin-top:8px">
         </div>
         <div class="grid grid-2">
           <div class="form-group">
@@ -267,7 +284,24 @@
           </div>
           <div class="form-group">
             <label class="form-label">סוג טיפול עיקרי</label>
-            <input type="text" class="form-input" id="pnd-treatment" data-custom-select="treatment" placeholder="הקלידי או בחרי...">
+            <select class="form-input" id="pnd-treatment" data-with-other>
+              <option value="">בחרי סוג טיפול</option>
+              <option value="CBT">CBT — קוגניטיבי-התנהגותי</option>
+              <option value="EMDR">EMDR</option>
+              <option value="DBT">DBT</option>
+              <option value="ACT">ACT</option>
+              <option value="פסיכותרפיה">פסיכותרפיה</option>
+              <option value="פסיכודינמי">פסיכודינמי</option>
+              <option value="פסיכואנליטי">פסיכואנליטי</option>
+              <option value="מיינדפולנס">מיינדפולנס</option>
+              <option value="טיפול זוגי">טיפול זוגי</option>
+              <option value="טיפול משפחתי">טיפול משפחתי</option>
+              <option value="טיפול קבוצתי">טיפול קבוצתי</option>
+              <option value="ילדים ונוער">ילדים ונוער</option>
+              <option value="טיפול בטראומה">טיפול בטראומה</option>
+              <option value="other">אחר (הכנס ידנית)</option>
+            </select>
+            <input type="text" class="form-input" id="pnd-treatment-other" placeholder="הכנסי סוג טיפול ידנית..." style="display:none;margin-top:8px">
           </div>
           <div class="form-group" style="grid-column:1/-1">
             <label class="form-label">הערות כלליות</label>
@@ -462,7 +496,7 @@
     // Save appointment
     document.getElementById('save-appt-btn').addEventListener('click', async () => {
       const patientId = document.getElementById('appt-patient-id').value;
-      const type = document.getElementById('appt-type').value;
+      const type = getSelectValue('appt-type');
       const date = document.getElementById('appt-date').value;
       const time = document.getElementById('appt-time').value;
       const duration = document.getElementById('appt-duration').value;
@@ -548,7 +582,7 @@
           phone: document.getElementById('pnd-phone').value || null,
           email: document.getElementById('pnd-email').value || null,
           birth_date: document.getElementById('pnd-birth').value || null,
-          treatment_type: document.getElementById('pnd-treatment').value || null,
+          treatment_type: getSelectValue('pnd-treatment') || null,
           notes: document.getElementById('pnd-notes').value || null,
           status: 'active'
         });
