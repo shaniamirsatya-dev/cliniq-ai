@@ -82,10 +82,32 @@
               </td></tr>
             </tbody>
           </table>
+        <!-- Mobile cards (hidden on desktop, shown on mobile via CSS) -->
+        <div class="mobile-cards" id="patients-mobile-cards"></div>
         </div>
       </div>
     </main>
   </div>
+
+  <!-- Mobile Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="/dashboard.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">🏠</span>
+      <span class="bottom-nav-label">בית</span>
+    </a>
+    <a href="/calendar.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">📅</span>
+      <span class="bottom-nav-label">יומן</span>
+    </a>
+    <a href="/patients.html" class="bottom-nav-item active">
+      <span class="bottom-nav-icon">👥</span>
+      <span class="bottom-nav-label">מטופלים</span>
+    </a>
+    <a href="/settings.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">⚙️</span>
+      <span class="bottom-nav-label">הגדרות</span>
+    </a>
+  </nav>
 
   <!-- FAB -->
   <button class="fab" onclick="openModal('modal-new-patient')" title="מטופל חדש">+</button>
@@ -271,6 +293,46 @@
       tbody.querySelectorAll('.btn-schedule').forEach(btn => btn.addEventListener('click', () => { window.location.href = '/calendar.html'; }));
       tbody.querySelectorAll('.btn-wa').forEach(btn => btn.addEventListener('click', () => openWhatsApp(btn.dataset.phone)));
       tbody.querySelectorAll('.btn-archive').forEach(btn => btn.addEventListener('click', () => archivePatient(btn.dataset.pid, btn.dataset.status)));
+
+      renderMobileCards();
+    }
+
+    function renderMobileCards() {
+      const container = document.getElementById('patients-mobile-cards');
+      if (!container) return;
+
+      if (filtered.length === 0) {
+        container.innerHTML = '';
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.innerHTML = '<div class="empty-state-icon">👥</div><h3>אין מטופלים</h3><p>לחצי על + להוספה</p>';
+        container.appendChild(empty);
+        return;
+      }
+
+      container.innerHTML = '';
+      filtered.forEach(p => {
+        const age = calcAge(p.birth_date);
+        const card = document.createElement('div');
+        card.className = 'patient-mobile-card';
+        card.innerHTML = `
+          <div class="avatar" style="background:${avatarColor(p.full_name)};flex-shrink:0"></div>
+          <div class="patient-mobile-card-info">
+            <div class="patient-mobile-card-name"></div>
+            <div class="patient-mobile-card-meta"></div>
+            <div class="patient-mobile-card-footer">
+              ${statusBadge(p.status)}
+              <button class="btn-whatsapp btn-sm card-wa-btn" style="margin-right:auto">💬</button>
+            </div>
+          </div>`;
+        card.querySelector('.avatar').textContent = initials(p.full_name);
+        card.querySelector('.patient-mobile-card-name').textContent = p.full_name;
+        const meta = [p.phone, p.treatment_type, age ? `גיל ${age}` : ''].filter(Boolean).join(' · ');
+        card.querySelector('.patient-mobile-card-meta').textContent = meta;
+        card.addEventListener('click', (e) => { if (e.target.closest('button')) return; window.location.href = `/patient.html?id=${p.id}`; });
+        card.querySelector('.card-wa-btn').addEventListener('click', () => openWhatsApp(p.phone || ''));
+        container.appendChild(card);
+      });
     }
 
     function scheduleAppt(patientId, name) {

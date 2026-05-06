@@ -167,6 +167,26 @@
     </div>
   </div>
 
+  <!-- Mobile Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="/dashboard.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">🏠</span>
+      <span class="bottom-nav-label">בית</span>
+    </a>
+    <a href="/calendar.html" class="bottom-nav-item active">
+      <span class="bottom-nav-icon">📅</span>
+      <span class="bottom-nav-label">יומן</span>
+    </a>
+    <a href="/patients.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">👥</span>
+      <span class="bottom-nav-label">מטופלים</span>
+    </a>
+    <a href="/settings.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">⚙️</span>
+      <span class="bottom-nav-label">הגדרות</span>
+    </a>
+  </nav>
+
   <!-- Appointment Detail Modal -->
   <div class="modal-overlay" id="modal-appt-detail" style="display:none">
     <div class="modal">
@@ -194,7 +214,7 @@
 
     let therapistId = null;
     let currentDate = new Date();
-    let currentView = 'week';
+    let currentView = window.innerWidth <= 768 ? 'day' : 'week';
     let appointments = [];
     let selectedApptId = null;
 
@@ -211,6 +231,11 @@
       if (urlDate) currentDate = new Date(urlDate);
 
       document.getElementById('appt-date').value = currentDate.toISOString().split('T')[0];
+
+      // Sync active view button with currentView (handles mobile day-default)
+      document.querySelectorAll('.cal-view-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.view === currentView);
+      });
 
       setupControls();
       if (therapistId) {

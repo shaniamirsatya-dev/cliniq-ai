@@ -100,7 +100,7 @@
         <div style="display:flex;flex-direction:column;gap:20px">
           <div class="card">
             <h3 class="card-title" style="margin-bottom:16px">⚡ פעולות מהירות</h3>
-            <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="quick-actions-col" style="display:flex;flex-direction:column;gap:8px">
               <button class="quick-action" onclick="openModal('modal-new-appt')">
                 <div class="quick-action-icon">📅</div>
                 <div>
@@ -157,6 +157,26 @@
       </div>
     </main>
   </div>
+
+  <!-- Mobile Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="/dashboard.html" class="bottom-nav-item active">
+      <span class="bottom-nav-icon">🏠</span>
+      <span class="bottom-nav-label">בית</span>
+    </a>
+    <a href="/calendar.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">📅</span>
+      <span class="bottom-nav-label">יומן</span>
+    </a>
+    <a href="/patients.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">👥</span>
+      <span class="bottom-nav-label">מטופלים</span>
+    </a>
+    <a href="/settings.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">⚙️</span>
+      <span class="bottom-nav-label">הגדרות</span>
+    </a>
+  </nav>
 
   <!-- New Appointment Modal -->
   <div class="modal-overlay" id="modal-new-appt" style="display:none">

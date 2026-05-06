@@ -12,11 +12,7 @@
   <style>
     .landing-layout { min-height: 100vh; }
     @media (max-width: 768px) {
-      .landing-layout { grid-template-columns: 1fr; }
-      .landing-left { padding: 40px 24px; min-height: auto; }
-      .landing-tagline { font-size: 1.5rem; }
-      .landing-right { padding: 40px 24px; }
-      .auth-card { padding: 28px 20px; }
+      #mobile-logo { display: block !important; }
     }
   </style>
 </head>
@@ -68,6 +64,12 @@
     <!-- RIGHT: Auth form -->
     <div class="landing-right">
       <div class="auth-card">
+        <!-- Mobile-only logo -->
+        <div style="text-align:center;margin-bottom:28px;display:none" id="mobile-logo">
+          <div style="font-size:2rem;font-weight:900;background:linear-gradient(135deg,var(--primary-light),#A78BFA);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px">✦ CliniqAI</div>
+          <div style="font-size:0.85rem;color:var(--text-muted)">ניהול קליניקה חכם</div>
+        </div>
+
         <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:4px">ברוכים הבאים 👋</h2>
         <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:24px">נהלו את הקליניקה שלכם בצורה חכמה</p>
 

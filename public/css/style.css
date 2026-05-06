@@ -804,42 +804,203 @@ tbody tr:hover { background: var(--surface-2); }
 }
 .btn-whatsapp:hover { background: #128C7E; }
 
+/* ===== BOTTOM NAV (mobile only) ===== */
+.bottom-nav { display: none; }
+.mobile-cards { display: none; flex-direction: column; gap: 12px; }
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1024px) {
   .main-content { padding: 20px; }
   .grid-4 { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 768px) {
-  :root { --sidebar-width: 0px; }
-  .sidebar {
-    transform: translateX(100%);
-    transition: transform 0.3s ease;
+  /* Hide sidebar and hamburger — replaced by bottom nav */
+  .sidebar { display: none !important; }
+  .mobile-menu-btn { display: none !important; }
+
+  /* Main content — no sidebar margin, bottom padding for nav */
+  .main-content {
+    margin-right: 0 !important;
+    padding: 16px 16px 88px !important;
   }
-  .sidebar.open { transform: translateX(0); }
-  .main-content { margin-right: 0; padding: 16px; }
-  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
-  h1 { font-size: 1.75rem; }
-  .search-bar { width: 100%; }
-  .page-header { flex-direction: column; align-items: flex-start; }
-  .mobile-menu-btn {
+
+  /* ── Bottom navigation bar ── */
+  .bottom-nav {
     display: flex;
     position: fixed;
-    top: 16px;
-    right: 16px;
-    z-index: 200;
-    width: 40px;
-    height: 40px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
     background: var(--dark);
-    color: white;
-    border: none;
-    border-radius: var(--radius-sm);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    z-index: 500;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    font-size: 1.1rem;
+    gap: 3px;
+    color: #64748B;
+    text-decoration: none;
+    font-family: 'Heebo', sans-serif;
+    transition: color 0.15s;
+    min-width: 0;
+  }
+  .bottom-nav-item.active { color: #14B8A6; }
+  .bottom-nav-icon { font-size: 1.4rem; line-height: 1; }
+  .bottom-nav-label { font-size: 0.6rem; font-weight: 600; }
+
+  /* ── Grids ── */
+  .grid-4 { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+  .grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
+  .grid-2 { grid-template-columns: 1fr !important; }
+  #mid-grid { grid-template-columns: 1fr !important; }
+  .stat-value { font-size: 1.6rem !important; }
+
+  /* ── Typography ── */
+  h1 { font-size: 1.5rem; }
+
+  /* ── Inputs: 16px prevents iOS zoom on focus ── */
+  input, select, textarea, .form-input { font-size: 16px !important; }
+
+  /* ── Tap targets: 44px minimum ── */
+  .btn { min-height: 44px; }
+  .btn-sm { min-height: 40px; padding: 8px 14px; }
+  .btn-icon { min-height: 44px; width: 44px; height: 44px; }
+
+  /* ── Tables → hidden; mobile-cards → shown ── */
+  .table-wrapper { display: none !important; }
+  .mobile-cards { display: flex !important; }
+
+  /* ── Patient card (mobile-cards item) ── */
+  .patient-mobile-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 16px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    cursor: pointer;
+    transition: box-shadow 0.15s;
+  }
+  .patient-mobile-card:active { box-shadow: var(--shadow); }
+  .patient-mobile-card-info { flex: 1; min-width: 0; }
+  .patient-mobile-card-name { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .patient-mobile-card-meta { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; }
+  .patient-mobile-card-footer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  /* ── Full-screen modals (sheet style) ── */
+  .modal-overlay { padding: 0 !important; align-items: flex-end !important; }
+  .modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 93vh;
+  }
+
+  /* ── Search ── */
+  .search-bar { width: 100% !important; max-width: 100% !important; }
+
+  /* ── Page header ── */
+  .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .page-header > div:last-child { width: 100%; display: flex; gap: 8px; flex-wrap: wrap; }
+  .page-header > div:last-child .btn { flex: 1; min-width: 140px; justify-content: center; }
+
+  /* ── Filter pills: horizontal scroll ── */
+  .filter-pills { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; scrollbar-width: none; }
+  .filter-pills::-webkit-scrollbar { display: none; }
+  .filter-pill { flex-shrink: 0; }
+
+  /* ── Tabs: underline style, horizontal scroll ── */
+  .tabs {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    display: flex;
+    gap: 0;
+    background: none;
+    padding: 0;
+    border-bottom: 2px solid var(--border);
+    border-radius: 0;
+    margin-bottom: 20px;
+    white-space: nowrap;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    flex-shrink: 0;
+    border-radius: 0 !important;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    padding: 10px 14px;
+    background: none !important;
+    box-shadow: none !important;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+  }
+  .tab-btn.active { color: var(--primary) !important; border-bottom-color: var(--primary); font-weight: 700; }
+
+  /* ── Patient header ── */
+  .patient-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .patient-actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .patient-actions .btn,
+  .patient-actions .btn-whatsapp,
+  .patient-actions a.btn { width: 100% !important; justify-content: center; text-align: center; }
+
+  /* ── FAB above bottom nav ── */
+  .fab { bottom: 76px; left: 16px; width: 52px; height: 52px; }
+
+  /* ── Calendar slots ── */
+  .time-slot, .week-cell { min-height: 56px; }
+  .time-label, .week-time-label { min-height: 56px; font-size: 0.65rem; }
+
+  /* ── Appointment items ── */
+  .appt-item { flex-wrap: wrap; gap: 10px; padding: 16px 0; }
+  .appt-actions { width: 100%; justify-content: flex-end; }
+
+  /* ── Quick actions: 2-column grid ── */
+  .quick-actions-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* ── AI panel ── */
+  .ai-panel { padding: 16px; }
+
+  /* ── Settings ── */
+  .settings-section { padding: 20px 16px; }
+  .plan-card { padding: 16px; }
+
+  /* ── Landing page: single column, form only ── */
+  .landing-layout { grid-template-columns: 1fr; }
+  .landing-left { display: none; }
+  .landing-right {
+    min-height: 100vh;
+    padding: 0;
+    background: var(--dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .auth-card {
+    background: var(--surface);
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    min-height: 100vh;
+    padding: 48px 24px 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    max-width: 100%;
   }
 }
 @media (min-width: 769px) {
   .mobile-menu-btn { display: none; }
+  .bottom-nav { display: none !important; }
 }
 
 /* ===== LANDING PAGE ===== */
