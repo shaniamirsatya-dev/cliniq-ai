@@ -47,32 +47,32 @@
           <p class="page-subtitle" id="today-date">טוען תאריך...</p>
         </div>
         <div style="display:flex;gap:10px">
-          <button class="btn btn-outline" onclick="window.location.href='/patients.html'">👤 מטופל חדש</button>
+          <button class="btn btn-outline" onclick="openModal('modal-new-patient-dash')">👤 מטופל חדש</button>
           <button class="btn btn-primary" onclick="openModal('modal-new-appt')">📅 + תור חדש</button>
         </div>
       </div>
 
       <!-- Stat Cards -->
       <div class="grid grid-4" style="margin-bottom:28px">
-        <div class="stat-card teal">
+        <div class="stat-card teal" data-nav="calendar-today" style="cursor:pointer">
           <div class="stat-label">תורים היום</div>
           <div class="stat-icon teal">📅</div>
           <div class="stat-value" id="stat-today">—</div>
           <div class="stat-sub">פגישות מתוכננות</div>
         </div>
-        <div class="stat-card purple">
+        <div class="stat-card purple" data-nav="patients" style="cursor:pointer">
           <div class="stat-label">מטופלים פעילים</div>
           <div class="stat-icon purple">👥</div>
           <div class="stat-value" id="stat-patients">—</div>
           <div class="stat-sub">מטופלים במעקב</div>
         </div>
-        <div class="stat-card green">
+        <div class="stat-card green" data-nav="calendar" style="cursor:pointer">
           <div class="stat-label">טיפולים החודש</div>
           <div class="stat-icon green">✅</div>
           <div class="stat-value" id="stat-month">—</div>
           <div class="stat-sub">טיפולים שהושלמו</div>
         </div>
-        <div class="stat-card gold">
+        <div class="stat-card gold" data-nav="calendar" style="cursor:pointer">
           <div class="stat-label">הבא בתור</div>
           <div class="stat-icon gold">⏰</div>
           <div class="stat-value" id="stat-next" style="font-size:1.1rem;line-height:1.4">—</div>
@@ -108,7 +108,7 @@
                   <div class="quick-action-sub">קבעי פגישה</div>
                 </div>
               </button>
-              <button class="quick-action" onclick="window.location.href='/patients.html'">
+              <button class="quick-action" onclick="openModal('modal-new-patient-dash')">
                 <div class="quick-action-icon" style="background:var(--secondary-bg)">👤</div>
                 <div>
                   <div class="quick-action-text">מטופל חדש</div>
@@ -240,6 +240,58 @@
       <div class="modal-footer">
         <button class="btn btn-primary" id="save-appt-btn">שמירה</button>
         <button class="btn btn-ghost" onclick="closeModal('modal-new-appt')">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Patient Modal -->
+  <div class="modal-overlay" id="modal-new-patient-dash" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">👤 מטופל חדש</h2>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="grid grid-2">
+          <div class="form-group" style="grid-column:1/-1">
+            <label class="form-label">שם מלא *</label>
+            <input type="text" class="form-input" id="pnd-name" placeholder="שם פרטי ומשפחה" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">טלפון</label>
+            <input type="tel" class="form-input" id="pnd-phone" placeholder="050-0000000">
+          </div>
+          <div class="form-group">
+            <label class="form-label">אימייל</label>
+            <input type="email" class="form-input" id="pnd-email" placeholder="email@example.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">תאריך לידה</label>
+            <input type="date" class="form-input" id="pnd-birth">
+          </div>
+          <div class="form-group">
+            <label class="form-label">סוג טיפול עיקרי</label>
+            <select class="form-input" id="pnd-treatment">
+              <option value="">בחרי סוג</option>
+              <option>טיפול פרטני</option>
+              <option>טיפול זוגי</option>
+              <option>טיפול משפחתי</option>
+              <option>טיפול CBT</option>
+              <option>טיפול EMDR</option>
+              <option>פיזיותרפיה</option>
+              <option>נטורופתיה</option>
+              <option>אחר</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label class="form-label">הערות כלליות</label>
+            <textarea class="form-input" id="pnd-notes" placeholder="מידע רלוונטי, רקע, הפניות..." style="min-height:80px"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="save-patient-dash-btn">שמירה</button>
+        <button class="btn btn-ghost" onclick="closeModal('modal-new-patient-dash')">ביטול</button>
       </div>
     </div>
   </div>
@@ -472,6 +524,46 @@
         } catch {}
       }
       showToast(`נשלחו ${sent} תזכורות לתורי מחר`, 'success');
+    });
+
+    // Stat card navigation
+    document.querySelectorAll('.stat-card[data-nav]').forEach(card => {
+      card.addEventListener('click', () => {
+        const nav = card.dataset.nav;
+        if (nav === 'calendar-today') window.location.href = '/calendar.html?date=' + new Date().toISOString().split('T')[0];
+        else if (nav === 'patients') window.location.href = '/patients.html';
+        else if (nav === 'calendar') window.location.href = '/calendar.html';
+      });
+    });
+
+    // Save new patient from dashboard modal
+    document.getElementById('save-patient-dash-btn').addEventListener('click', async () => {
+      const name = document.getElementById('pnd-name').value.trim();
+      if (!name) { showToast('אנא הכניסי שם מלא', 'error'); return; }
+      if (!therapistId) { showToast('טוען פרופיל...', 'info'); return; }
+
+      const btn = document.getElementById('save-patient-dash-btn');
+      btn.disabled = true; btn.textContent = 'שומר...';
+
+      try {
+        await createPatient({
+          therapist_id: therapistId,
+          full_name: name,
+          phone: document.getElementById('pnd-phone').value || null,
+          email: document.getElementById('pnd-email').value || null,
+          birth_date: document.getElementById('pnd-birth').value || null,
+          treatment_type: document.getElementById('pnd-treatment').value || null,
+          notes: document.getElementById('pnd-notes').value || null,
+          status: 'active'
+        });
+        showToast('מטופל נוסף בהצלחה! 🎉', 'success');
+        closeModal('modal-new-patient-dash');
+        setTimeout(() => window.location.href = '/patients.html', 1000);
+      } catch (err) {
+        showToast('שגיאה בשמירה: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false; btn.textContent = 'שמירה';
+      }
     });
 
     function loadMockData() {

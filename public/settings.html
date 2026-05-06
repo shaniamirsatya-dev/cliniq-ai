@@ -229,14 +229,14 @@
       container.innerHTML = DAYS_HE.map((day, i) => {
         const h = workingHours[i] || { enabled: i < 5, start: '09:00', end: '18:00' };
         return `
-          <div style="display:grid;grid-template-columns:80px auto 1fr auto 1fr;align-items:center;gap:12px;padding:10px;background:var(--bg);border-radius:8px">
+          <div class="working-hours-row">
             <label class="toggle" style="width:44px">
               <input type="checkbox" data-day="${i}" class="hours-enabled" ${h.enabled?'checked':''}>
               <span class="toggle-slider"></span>
             </label>
             <div class="working-hours-day">${day}</div>
             <input type="time" class="form-input" data-day="${i}" data-type="start" value="${h.start}" ${h.enabled?'':'disabled'} style="font-size:0.85rem;padding:7px 10px">
-            <span style="font-size:0.8rem;color:var(--text-muted);text-align:center">עד</span>
+            <span class="hours-sep">עד</span>
             <input type="time" class="form-input" data-day="${i}" data-type="end" value="${h.end}" ${h.enabled?'':'disabled'} style="font-size:0.85rem;padding:7px 10px">
           </div>`;
       }).join('');
