@@ -9,17 +9,23 @@
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    .landing-layout { min-height: 100vh; }
-    @media (max-width: 768px) {
-      #mobile-logo { display: block !important; }
-    }
-  </style>
 </head>
 <body>
   <div class="landing-layout">
 
-    <!-- LEFT: Marketing -->
+    <!-- MOBILE HERO: shown only on mobile, above the form -->
+    <div class="mobile-hero">
+      <div class="mobile-hero-logo">✦ CliniqAI</div>
+      <div class="mobile-hero-tagline">ניהול הקליניקה שלך —<br>חכם, פשוט, מהיר</div>
+      <div class="mobile-hero-pills">
+        <div class="mobile-hero-pill">✅ יומן חכם</div>
+        <div class="mobile-hero-pill">✅ תזכורות</div>
+        <div class="mobile-hero-pill">✅ AI סיכום</div>
+      </div>
+      <div class="mobile-hero-stats">★4.9 &nbsp;|&nbsp; +30K תורים &nbsp;|&nbsp; +500 מטפלים</div>
+    </div>
+
+    <!-- LEFT: Marketing (desktop only) -->
     <div class="landing-left">
       <div class="landing-logo">✦ CliniqAI</div>
       <h1 class="landing-tagline">ניהול הקליניקה שלך —<br>חכם, פשוט, מהיר</h1>
@@ -64,12 +70,6 @@
     <!-- RIGHT: Auth form -->
     <div class="landing-right">
       <div class="auth-card">
-        <!-- Mobile-only logo -->
-        <div style="text-align:center;margin-bottom:28px;display:none" id="mobile-logo">
-          <div style="font-size:2rem;font-weight:900;background:linear-gradient(135deg,var(--primary-light),#A78BFA);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px">✦ CliniqAI</div>
-          <div style="font-size:0.85rem;color:var(--text-muted)">ניהול קליניקה חכם ופשוט</div>
-        </div>
-
         <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:4px;white-space:nowrap">ברוכים הבאים 👋</h2>
         <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:24px">נהלו את הקליניקה שלכם בצורה חכמה</p>
 

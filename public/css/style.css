@@ -1032,14 +1032,28 @@ tbody tr:hover { background: var(--surface-2); }
   .working-hours-row .hours-sep { grid-area: sep; align-self: center; justify-self: center; }
   .working-hours-row input[data-type="end"] { grid-area: end; }
 
-  /* ── Landing page: full-screen native-app style ── */
-  .landing-layout { grid-template-columns: 1fr; }
+  /* ── Landing page: stacked dark hero + white form ── */
+  .landing-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100vh !important;
+    grid-template-columns: unset !important;
+  }
+  .mobile-hero {
+    display: flex !important;
+    flex: 0 0 40vh;
+    min-height: 0;
+  }
   .landing-left { display: none !important; }
   .landing-right {
-    min-height: 100vh !important;
+    flex: 1 !important;
+    min-height: 0 !important;
     padding: 0 !important;
     background: #fff !important;
-    display: block !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    overflow-y: auto !important;
     width: 100% !important;
   }
   body, html { background: #fff !important; }
@@ -1048,11 +1062,11 @@ tbody tr:hover { background: var(--surface-2); }
     border-radius: 0 !important;
     box-shadow: none !important;
     border: none !important;
-    padding: 40px 24px !important;
+    padding: 28px 24px 40px !important;
     width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
-    min-height: 100vh !important;
+    min-height: 0 !important;
     box-sizing: border-box !important;
   }
   .auth-card .form-input { width: 100%; box-sizing: border-box; }
@@ -1078,6 +1092,74 @@ tbody tr:hover { background: var(--surface-2); }
 @media (min-width: 769px) {
   .mobile-menu-btn { display: none; }
   .bottom-nav { display: none !important; }
+}
+
+/* ===== MOBILE HERO (hidden on desktop, shown on mobile) ===== */
+.mobile-hero {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0D9488 0%, #0F172A 100%);
+  text-align: center;
+  padding: 32px 24px 28px;
+  position: relative;
+  overflow: hidden;
+}
+.mobile-hero::before {
+  content: '';
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%);
+  top: -80px;
+  right: -80px;
+}
+.mobile-hero-logo {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: white;
+  margin-bottom: 10px;
+  letter-spacing: -0.5px;
+  position: relative;
+  z-index: 1;
+}
+.mobile-hero-tagline {
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  margin-bottom: 18px;
+  line-height: 1.5;
+  position: relative;
+  z-index: 1;
+}
+.mobile-hero-pills {
+  display: flex;
+  gap: 7px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  position: relative;
+  z-index: 1;
+}
+.mobile-hero-pill {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 99px;
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.1);
+  white-space: nowrap;
+}
+.mobile-hero-stats {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.7);
+  font-weight: 500;
+  direction: rtl;
+  position: relative;
+  z-index: 1;
 }
 
 /* ===== LANDING PAGE ===== */
