@@ -1036,23 +1036,24 @@ tbody tr:hover { background: var(--surface-2); }
   .landing-layout { grid-template-columns: 1fr; }
   .landing-left { display: none !important; }
   .landing-right {
-    min-height: 100vh;
-    padding: 0;
-    background: #fff;
-    display: block;
+    min-height: 100vh !important;
+    padding: 0 !important;
+    background: #fff !important;
+    display: block !important;
+    width: 100% !important;
   }
-  body { background: #fff; }
-  .auth-card,
-  .login-card, .auth-container, .login-container, .form-container {
+  body, html { background: #fff !important; }
+  .auth-card {
     background: #fff !important;
     border-radius: 0 !important;
     box-shadow: none !important;
     border: none !important;
     padding: 40px 24px !important;
     width: 100% !important;
-    max-width: 100% !important;
+    max-width: none !important;
     margin: 0 !important;
     min-height: 100vh !important;
+    box-sizing: border-box !important;
   }
   .auth-card .form-input { width: 100%; box-sizing: border-box; }
   #google-btn {
@@ -1215,6 +1216,25 @@ tbody tr:hover { background: var(--surface-2); }
   box-shadow: var(--shadow-sm);
 }
 .auth-form { display: flex; flex-direction: column; gap: 14px; }
+.stat-modal-tab {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.stat-modal-tab.active {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
 .auth-divider {
   text-align: center;
   font-size: 0.72rem;

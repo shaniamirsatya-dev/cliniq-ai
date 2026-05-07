@@ -54,7 +54,7 @@
 
       <!-- Stat Cards -->
       <div class="grid grid-4" style="margin-bottom:28px">
-        <div class="stat-card teal" data-nav="calendar-today" style="cursor:pointer">
+        <div class="stat-card teal" data-nav="modal-appts" style="cursor:pointer">
           <div class="stat-label">תורים היום</div>
           <div class="stat-icon teal">📅</div>
           <div class="stat-value" id="stat-today">—</div>
@@ -66,7 +66,7 @@
           <div class="stat-value" id="stat-patients">—</div>
           <div class="stat-sub">מטופלים במעקב</div>
         </div>
-        <div class="stat-card green" data-nav="calendar" style="cursor:pointer">
+        <div class="stat-card green" data-nav="modal-treatments" style="cursor:pointer">
           <div class="stat-label">טיפולים החודש</div>
           <div class="stat-icon green">✅</div>
           <div class="stat-value" id="stat-month">—</div>
@@ -336,6 +336,46 @@
     </div>
   </div>
 
+  <!-- Appointments List Modal -->
+  <div class="modal-overlay" id="modal-appts-today" style="display:none">
+    <div class="modal" style="max-width:640px;width:95%">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-appts-title">📅 תורים</h2>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;background:var(--surface-2);border-radius:8px;padding:4px;margin-bottom:16px">
+          <button class="stat-modal-tab active" data-tab="today">היום</button>
+          <button class="stat-modal-tab" data-tab="week">השבוע</button>
+          <button class="stat-modal-tab" data-tab="month">החודש</button>
+        </div>
+        <div class="search-bar" style="margin-bottom:16px">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="appts-modal-search" placeholder="חיפוש לפי שם מטופל...">
+        </div>
+        <div id="appts-modal-list" style="max-height:380px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Treatments Month Modal -->
+  <div class="modal-overlay" id="modal-treatments-month" style="display:none">
+    <div class="modal" style="max-width:640px;width:95%">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-treatments-title">✅ טיפולים</h2>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="treatments-summary" style="display:flex;gap:10px;margin-bottom:16px"></div>
+        <div class="search-bar" style="margin-bottom:16px">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="treatments-modal-search" placeholder="חיפוש לפי שם מטופל...">
+        </div>
+        <div id="treatments-modal-list" style="max-height:340px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+
   <script src="/js/supabase.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/app.js"></script>
@@ -590,12 +630,197 @@
       showToast(`נשלחו ${sent} תזכורות לתורי מחר`, 'success');
     });
 
+    // ─── Stat modal helpers ───
+    function localDateStrDash(date) {
+      return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+    }
+    const MONTHS_HE_D = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+    let _appts = [];
+    let _apptsFilter = 'today';
+    let _apptsSearch = '';
+    let _treatSearch = '';
+
+    async function openApptsModal() {
+      const now = new Date();
+      document.getElementById('modal-appts-title').textContent =
+        `📅 תורים — ${formatDate(now, {day:'numeric', month:'long', year:'numeric'})}`;
+      _apptsFilter = 'today'; _apptsSearch = '';
+      document.getElementById('appts-modal-search').value = '';
+      document.querySelectorAll('.stat-modal-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === 'today'));
+      openModal('modal-appts-today');
+      try { _appts = await getAppointments(therapistId); } catch(e) {}
+      renderApptsModal();
+    }
+
+    function renderApptsModal() {
+      const now = new Date();
+      const todayStr = localDateStrDash(now);
+      const ws = new Date(now); ws.setDate(now.getDate() - now.getDay()); ws.setHours(0,0,0,0);
+      const we = new Date(ws); we.setDate(ws.getDate() + 6); we.setHours(23,59,59,999);
+      const ms = new Date(now.getFullYear(), now.getMonth(), 1);
+      const me = new Date(now.getFullYear(), now.getMonth()+1, 0, 23, 59, 59);
+
+      let filtered = _appts.filter(a => {
+        const d = new Date(a.date_time);
+        if (_apptsFilter === 'today') return localDateStrDash(d) === todayStr;
+        if (_apptsFilter === 'week') return d >= ws && d <= we;
+        return d >= ms && d <= me;
+      });
+      if (_apptsSearch) {
+        const q = _apptsSearch.toLowerCase();
+        filtered = filtered.filter(a => a.patients?.full_name?.toLowerCase().includes(q));
+      }
+
+      const container = document.getElementById('appts-modal-list');
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="empty-state" style="padding:30px 20px"><div class="empty-state-icon">📅</div><h3>אין תורים מתוכננים</h3></div>`;
+        return;
+      }
+      container.innerHTML = '';
+      filtered.forEach(a => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border-light);cursor:pointer;border-radius:6px;padding-right:6px;';
+        row.addEventListener('mouseenter', () => row.style.background = 'var(--surface-2)');
+        row.addEventListener('mouseleave', () => row.style.background = '');
+
+        const timeEl = document.createElement('div');
+        timeEl.style.cssText = 'font-size:0.875rem;font-weight:700;color:var(--primary);min-width:52px;flex-shrink:0;';
+        timeEl.textContent = formatTime(a.date_time);
+
+        const infoEl = document.createElement('div');
+        infoEl.style.cssText = 'flex:1;min-width:0;';
+        const nameEl = document.createElement('div');
+        nameEl.style.cssText = 'font-weight:600;font-size:0.875rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+        nameEl.textContent = a.patients?.full_name || 'לא ידוע';
+        infoEl.appendChild(nameEl);
+        if (a.treatment_type || _apptsFilter !== 'today') {
+          const metaEl = document.createElement('div');
+          metaEl.style.cssText = 'font-size:0.72rem;color:var(--text-muted);margin-top:2px;';
+          const parts = [];
+          if (_apptsFilter !== 'today') parts.push(formatDate(a.date_time, {day:'numeric', month:'short'}));
+          if (a.treatment_type) parts.push(a.treatment_type);
+          metaEl.textContent = parts.join(' · ');
+          infoEl.appendChild(metaEl);
+        }
+
+        const badgeWrap = document.createElement('div');
+        badgeWrap.style.flexShrink = '0';
+        badgeWrap.innerHTML = statusBadge(a.status);
+
+        row.appendChild(timeEl);
+        row.appendChild(infoEl);
+        row.appendChild(badgeWrap);
+        row.addEventListener('click', () => {
+          closeModal('modal-appts-today');
+          window.location.href = `/calendar.html?date=${localDateStrDash(new Date(a.date_time))}&appt=${a.id}`;
+        });
+        container.appendChild(row);
+      });
+    }
+
+    async function openTreatmentsModal() {
+      const now = new Date();
+      document.getElementById('modal-treatments-title').textContent =
+        `✅ טיפולים — ${MONTHS_HE_D[now.getMonth()]} ${now.getFullYear()}`;
+      _treatSearch = '';
+      document.getElementById('treatments-modal-search').value = '';
+      openModal('modal-treatments-month');
+      try { _appts = await getAppointments(therapistId); } catch(e) {}
+      renderTreatmentsModal();
+    }
+
+    function renderTreatmentsModal() {
+      const now = new Date();
+      const ms = new Date(now.getFullYear(), now.getMonth(), 1);
+      const me = new Date(now.getFullYear(), now.getMonth()+1, 0, 23, 59, 59);
+      let filtered = _appts.filter(a => { const d = new Date(a.date_time); return d >= ms && d <= me; });
+      if (_treatSearch) {
+        const q = _treatSearch.toLowerCase();
+        filtered = filtered.filter(a => a.patients?.full_name?.toLowerCase().includes(q));
+      }
+
+      const total = filtered.length;
+      const completed = filtered.filter(a => a.status === 'confirmed').length;
+      const cancelled = filtered.filter(a => a.status === 'cancelled').length;
+      document.getElementById('treatments-summary').innerHTML = `
+        <div style="flex:1;text-align:center;padding:10px 8px;background:var(--surface-2);border-radius:8px">
+          <div style="font-size:1.5rem;font-weight:800;color:var(--text)">${total}</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">סך הכל</div>
+        </div>
+        <div style="flex:1;text-align:center;padding:10px 8px;background:#D1FAE5;border-radius:8px">
+          <div style="font-size:1.5rem;font-weight:800;color:#059669">${completed}</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">הושלמו</div>
+        </div>
+        <div style="flex:1;text-align:center;padding:10px 8px;background:#FEE2E2;border-radius:8px">
+          <div style="font-size:1.5rem;font-weight:800;color:#DC2626">${cancelled}</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">בוטלו</div>
+        </div>`;
+
+      const container = document.getElementById('treatments-modal-list');
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="empty-state" style="padding:30px 20px"><div class="empty-state-icon">✅</div><h3>אין טיפולים החודש</h3></div>`;
+        return;
+      }
+      container.innerHTML = '';
+      filtered.forEach(a => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-light);cursor:pointer;border-radius:6px;padding-right:4px;';
+        row.addEventListener('mouseenter', () => row.style.background = 'var(--surface-2)');
+        row.addEventListener('mouseleave', () => row.style.background = '');
+
+        const dateEl = document.createElement('div');
+        dateEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted);min-width:54px;flex-shrink:0;';
+        dateEl.textContent = formatDate(a.date_time, {day:'numeric', month:'short'});
+
+        const timeEl = document.createElement('div');
+        timeEl.style.cssText = 'font-size:0.8rem;font-weight:700;color:var(--primary);min-width:44px;flex-shrink:0;';
+        timeEl.textContent = formatTime(a.date_time);
+
+        const nameEl = document.createElement('div');
+        nameEl.style.cssText = 'flex:1;font-weight:600;font-size:0.875rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+        nameEl.textContent = a.patients?.full_name || 'לא ידוע';
+
+        const badgeWrap = document.createElement('div');
+        badgeWrap.style.flexShrink = '0';
+        badgeWrap.innerHTML = statusBadge(a.status);
+
+        row.appendChild(dateEl);
+        row.appendChild(timeEl);
+        row.appendChild(nameEl);
+        row.appendChild(badgeWrap);
+        row.addEventListener('click', () => {
+          closeModal('modal-treatments-month');
+          window.location.href = `/calendar.html?date=${localDateStrDash(new Date(a.date_time))}&appt=${a.id}`;
+        });
+        container.appendChild(row);
+      });
+    }
+
+    // Wire modal tab buttons and search
+    document.querySelectorAll('.stat-modal-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.stat-modal-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        _apptsFilter = btn.dataset.tab;
+        renderApptsModal();
+      });
+    });
+    document.getElementById('appts-modal-search').addEventListener('input', (e) => {
+      _apptsSearch = e.target.value;
+      renderApptsModal();
+    });
+    document.getElementById('treatments-modal-search').addEventListener('input', (e) => {
+      _treatSearch = e.target.value;
+      renderTreatmentsModal();
+    });
+
     // Stat card navigation
     document.querySelectorAll('.stat-card[data-nav]').forEach(card => {
       card.addEventListener('click', () => {
         const nav = card.dataset.nav;
-        if (nav === 'calendar-today') window.location.href = '/calendar.html?date=' + new Date().toISOString().split('T')[0];
+        if (nav === 'modal-appts') openApptsModal();
         else if (nav === 'patients') window.location.href = '/patients.html';
+        else if (nav === 'modal-treatments') openTreatmentsModal();
         else if (nav === 'calendar') {
           const apptId = card.dataset.apptId;
           const apptDate = card.dataset.apptDate;
