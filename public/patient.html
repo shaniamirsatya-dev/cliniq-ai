@@ -353,7 +353,7 @@
         <div class="patient-actions">
           ${patient.phone ? `<a href="tel:${escapeHTML(patient.phone)}" class="btn btn-ghost btn-sm">📞 התקשר</a>` : ''}
           ${patient.phone ? `<button class="btn-whatsapp btn-sm" id="wa-btn">💬 וואטסאפ</button>` : ''}
-          <button class="btn btn-outline btn-sm" onclick="window.location.href='/calendar.html'">📅 קבע תור</button>
+          <button class="btn btn-outline btn-sm" id="schedule-btn">📅 קבע תור</button>
           <button class="btn btn-ghost btn-sm" onclick="openEditModal()">✏️ ערוך</button>
         </div>`;
 
@@ -364,6 +364,10 @@
       if (header.querySelector('.p-type')) header.querySelector('.p-type').textContent = patient.treatment_type;
       if (header.querySelector('.p-notes')) header.querySelector('.p-notes').textContent = patient.notes;
       if (header.querySelector('#wa-btn')) header.querySelector('#wa-btn').addEventListener('click', () => openWhatsApp(patient.phone));
+      header.querySelector('#schedule-btn').addEventListener('click', () => {
+        const name = encodeURIComponent(patient.full_name || '');
+        window.location.href = `/calendar.html?patient_id=${patient.id}&patient_name=${name}`;
+      });
     }
 
     async function loadHistory() {

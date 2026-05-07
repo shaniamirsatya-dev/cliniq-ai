@@ -419,38 +419,82 @@ async function initPatientSearch(inputId, hiddenId, therapistId) {
   const hidden = document.getElementById(hiddenId);
   if (!input) return;
 
+  let allPatients = [];
   let dropdown = null;
 
-  input.addEventListener('input', async () => {
-    const q = input.value.trim();
-    if (q.length < 2) { dropdown && dropdown.remove(); dropdown = null; return; }
-    const patients = await getPatients(therapistId, { search: q });
-    if (dropdown) dropdown.remove();
+  try { allPatients = await getPatients(therapistId); } catch(e) {}
+
+  function showDropdown(q) {
+    removeDropdown();
+    const lower = (q || '').toLowerCase();
+    const filtered = lower
+      ? allPatients.filter(p => p.full_name?.toLowerCase().includes(lower))
+      : allPatients;
+
     dropdown = document.createElement('div');
-    dropdown.style.cssText = 'position:absolute;background:white;border:1.5px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);z-index:500;width:100%;max-height:200px;overflow-y:auto;';
-    if (patients.length === 0) {
-      dropdown.innerHTML = '<div style="padding:12px 16px;color:var(--text-muted);font-size:0.875rem">לא נמצאו מטופלים</div>';
-    } else {
-      patients.forEach(p => {
-        const item = document.createElement('div');
-        item.style.cssText = 'padding:10px 16px;cursor:pointer;font-size:0.875rem;transition:background 0.15s;';
-        item.textContent = `${p.full_name} — ${p.phone || ''}`;
-        item.addEventListener('mouseenter', () => item.style.background = 'var(--surface-2)');
-        item.addEventListener('mouseleave', () => item.style.background = '');
-        item.addEventListener('click', () => {
-          input.value = p.full_name;
-          if (hidden) hidden.value = p.id;
-          dropdown.remove(); dropdown = null;
-        });
-        dropdown.appendChild(item);
-      });
+    dropdown.style.cssText = 'position:absolute;left:0;right:0;top:100%;background:white;border:1.5px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:600;max-height:240px;overflow-y:auto;margin-top:2px;';
+
+    if (filtered.length === 0 && lower) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'padding:12px 14px;color:var(--text-muted);font-size:0.875rem;';
+      empty.textContent = 'לא נמצאו מטופלים';
+      dropdown.appendChild(empty);
     }
+
+    filtered.forEach(p => {
+      const item = document.createElement('div');
+      item.style.cssText = 'padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border-light);';
+      const nameEl = document.createElement('div');
+      nameEl.style.cssText = 'font-weight:600;font-size:0.875rem;';
+      nameEl.textContent = p.full_name;
+      item.appendChild(nameEl);
+      if (p.treatment_type || p.phone) {
+        const metaEl = document.createElement('div');
+        metaEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-top:2px;';
+        metaEl.textContent = [p.treatment_type, p.phone].filter(Boolean).join(' · ');
+        item.appendChild(metaEl);
+      }
+      item.addEventListener('mouseenter', () => item.style.background = 'var(--surface-2)');
+      item.addEventListener('mouseleave', () => item.style.background = '');
+      item.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        input.value = p.full_name;
+        if (hidden) hidden.value = p.id;
+        const gf = document.getElementById('appt-guest-fields');
+        if (gf) gf.style.display = 'none';
+        removeDropdown();
+      });
+      dropdown.appendChild(item);
+    });
+
+    // Guest option
+    const guestItem = document.createElement('div');
+    guestItem.style.cssText = 'padding:10px 14px;cursor:pointer;color:var(--primary);font-weight:600;font-size:0.875rem;';
+    guestItem.textContent = '+ הוסף כמבקר חדש (ללא תיק מטופל)';
+    guestItem.addEventListener('mouseenter', () => guestItem.style.background = 'var(--primary-bg)');
+    guestItem.addEventListener('mouseleave', () => guestItem.style.background = '');
+    guestItem.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      input.value = 'מבקר חדש';
+      if (hidden) hidden.value = '__guest__';
+      removeDropdown();
+      const gf = document.getElementById('appt-guest-fields');
+      if (gf) gf.style.display = 'block';
+    });
+    dropdown.appendChild(guestItem);
+
     const wrapper = input.parentElement;
     wrapper.style.position = 'relative';
     wrapper.appendChild(dropdown);
-  });
+  }
 
-  document.addEventListener('click', (e) => {
-    if (dropdown && !input.contains(e.target)) { dropdown.remove(); dropdown = null; }
+  function removeDropdown() {
+    if (dropdown) { dropdown.remove(); dropdown = null; }
+  }
+
+  input.addEventListener('focus', () => { if (!input.readOnly) showDropdown(input.value.trim()); });
+  input.addEventListener('input', () => { if (!input.readOnly) showDropdown(input.value.trim()); });
+  document.addEventListener('pointerdown', (e) => {
+    if (dropdown && !input.contains(e.target) && !dropdown.contains(e.target)) removeDropdown();
   });
 }

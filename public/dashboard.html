@@ -195,6 +195,23 @@
           <input type="text" class="form-input" id="appt-patient-search" placeholder="חפשי שם מטופל...">
           <input type="hidden" id="appt-patient-id">
         </div>
+        <div id="appt-guest-fields" style="display:none;background:var(--primary-bg);border-radius:8px;padding:12px 14px;margin-bottom:16px">
+          <div style="font-size:0.8rem;font-weight:600;color:var(--primary);margin-bottom:10px">פרטי מבקר חדש</div>
+          <div class="grid grid-2" style="gap:8px">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">שם פרטי *</label>
+              <input type="text" class="form-input" id="guest-first-name" placeholder="שם פרטי">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">שם משפחה *</label>
+              <input type="text" class="form-input" id="guest-last-name" placeholder="שם משפחה">
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:8px;margin-bottom:0">
+            <label class="form-label">טלפון</label>
+            <input type="tel" class="form-input" id="guest-phone" placeholder="050-0000000">
+          </div>
+        </div>
         <div class="form-group">
           <label class="form-label">סוג טיפול</label>
           <select class="form-input" id="appt-type" data-with-other>
@@ -228,12 +245,15 @@
         </div>
         <div class="form-group">
           <label class="form-label">משך הפגישה</label>
-          <select class="form-input" id="appt-duration">
+          <select class="form-input" id="appt-duration" data-with-other>
             <option value="30">30 דקות</option>
             <option value="45">45 דקות</option>
             <option value="60" selected>60 דקות</option>
             <option value="90">90 דקות</option>
+            <option value="120">120 דקות</option>
+            <option value="other">אחר</option>
           </select>
+          <input type="number" class="form-input" id="appt-duration-other" min="5" max="480" placeholder="משך בדקות" style="display:none;margin-top:8px">
         </div>
         <div class="form-group">
           <label class="form-label">הערות</label>
@@ -495,17 +515,36 @@
 
     // Save appointment
     document.getElementById('save-appt-btn').addEventListener('click', async () => {
-      const patientId = document.getElementById('appt-patient-id').value;
+      let patientId = document.getElementById('appt-patient-id').value;
       const type = getSelectValue('appt-type');
       const date = document.getElementById('appt-date').value;
       const time = document.getElementById('appt-time').value;
-      const duration = document.getElementById('appt-duration').value;
       const notes = document.getElementById('appt-notes').value;
+      const btn = document.getElementById('save-appt-btn');
+
+      // Create patient record for guest visitors
+      if (patientId === '__guest__') {
+        const firstName = document.getElementById('guest-first-name').value.trim();
+        const lastName = document.getElementById('guest-last-name').value.trim();
+        if (!firstName || !lastName) { showToast('אנא הכנסי שם פרטי ושם משפחה', 'error'); return; }
+        btn.disabled = true; btn.textContent = 'שומר...';
+        try {
+          const newPatient = await createPatient({
+            therapist_id: therapistId,
+            full_name: `${firstName} ${lastName}`,
+            phone: document.getElementById('guest-phone').value.trim() || null,
+            status: 'active'
+          });
+          patientId = newPatient.id;
+        } catch(err) {
+          showToast('שגיאה ביצירת מטופל: ' + err.message, 'error');
+          btn.disabled = false; btn.textContent = 'שמירה'; return;
+        }
+      }
 
       if (!patientId) { showToast('אנא בחרי מטופל', 'error'); return; }
       if (!date || !time) { showToast('אנא מלאי תאריך ושעה', 'error'); return; }
-
-      const btn = document.getElementById('save-appt-btn');
+      const duration = parseInt(getSelectValue('appt-duration')) || 60;
       btn.disabled = true; btn.textContent = 'שומר...';
 
       try {
@@ -513,7 +552,7 @@
           therapist_id: therapistId,
           patient_id: patientId,
           date_time: `${date}T${time}:00`,
-          duration: parseInt(duration),
+          duration,
           treatment_type: type,
           notes,
           status: 'confirmed'
